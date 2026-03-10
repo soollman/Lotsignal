@@ -28,7 +28,7 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--txt);font-fami
 .sug-msg{padding:12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--mut);text-align:center;letter-spacing:.08em}
 
 /* MAP: canvas for tiles, div overlay for pins */
-#map{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:1;overflow:hidden;background:#141a14;touch-action:none}
+#map{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:1;overflow:hidden;background:#141a14;touch-action:none;cursor:crosshair}
 #mapCanvas{position:absolute;top:0;left:0;pointer-events:none}
 #pinLayer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
 
@@ -135,7 +135,7 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--txt);font-fami
     <div class="empty">
       <div class="empty-ico">◎</div>
       <div class="empty-lbl">No parcel selected</div>
-      <div class="empty-txt">Start typing a Sacramento address — suggestions appear as you type.</div>
+      <div class="empty-txt">Search an address above, or <strong style="color:var(--txt)">tap anywhere on the map</strong> to analyze that parcel.</div>
     </div>
   </div>
 </div>
@@ -281,6 +281,53 @@ function pan(dx,dy){
 }
 function flyTo(lat,lng,zoom){M.cx=lng;M.cy=lat;M.zoom=zoom||16;draw();}
 window.addEventListener('resize',resize);
+
+// ── MAP CLICK — tap any spot to analyze that parcel ──────────────────────────
+// Convert pixel (x,y) back to lat/lng
+function px2latlng(px,py){
+  var dpp=360/(256*Math.pow(2,M.zoom));
+  var lng=M.cx+(px-W()/2)*dpp;
+  var wy=(0.5-Math.log((1+Math.sin(M.cy*Math.PI/180))/(1-Math.sin(M.cy*Math.PI/180)))/(4*Math.PI))*256*Math.pow(2,M.zoom);
+  wy-=(py-H()/2)*dpp*(256*Math.pow(2,M.zoom)/360);
+  var lat=(2*Math.atan(Math.exp((0.5-wy/(256*Math.pow(2,M.zoom)))*2*Math.PI))-Math.PI/2)*180/Math.PI;
+  return{lat:lat,lng:lng};
+}
+
+function handleMapClick(px,py){
+  if(moved)return; // was a drag, not a tap
+  var ll=px2latlng(px,py);
+  var lat=ll.lat,lng=ll.lng;
+  // Bounds check: Sacramento County roughly
+  if(lat<38.0||lat>38.9||lng<-121.9||lng>-120.8)return;
+  selId=null;selLat=lat;selLng=lng;
+  setSearchPin(lat,lng);
+  flyTo(lat,lng,Math.max(M.zoom,16));
+  showSpin('Fetching parcel data…');peekPanel();
+  // Reverse geocode with Nominatim to get a street address
+  fetch('https://nominatim.openstreetmap.org/reverse?format=json&addressdetails=1&lat='+lat+'&lon='+lng,
+    {headers:{'Accept-Language':'en-US'}})
+    .then(function(r){return r.json();})
+    .then(function(geo){
+      var a=geo&&geo.address?geo.address:{};
+      var addr=(a.house_number?a.house_number+' ':'')+(a.road||a.pedestrian||'');
+      if(!addr.trim())addr=geo&&geo.display_name?geo.display_name.split(',').slice(0,2).join(',').trim():'Unknown location';
+      if(a.city)addr+=', '+a.city;
+      document.getElementById('si').value=addr;
+      go(lat,lng,addr);
+    })
+    .catch(function(){
+      // If reverse geocode fails, still run parcel lookup with coords
+      go(lat,lng,'Lat '+lat.toFixed(5)+', Lng '+lng.toFixed(5));
+    });
+}
+
+mapDiv.addEventListener('click',function(e){handleMapClick(e.offsetX,e.offsetY);});
+mapDiv.addEventListener('touchend',function(e){
+  if(!moved&&e.changedTouches.length===1){
+    var r=mapDiv.getBoundingClientRect();
+    handleMapClick(e.changedTouches[0].clientX-r.left, e.changedTouches[0].clientY-r.top);
+  }
+});
 
 // ── DEMO DATA ─────────────────────────────────────────────────────────────────
 var DEMOS=[
