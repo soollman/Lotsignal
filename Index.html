@@ -297,12 +297,36 @@ setTimeout(function(){initDemoPins();resize();},50);
 
 // ── PROXY (for Sacramento County APIs only — NOT Nominatim) ───────────────────
 function proxyFetch(url){
-  return fetch('https://corsproxy.io/?'+encodeURIComponent(url))
-    .then(function(r){if(!r.ok)throw new Error(r.status);return r.json();})
-    .catch(function(){
-      return fetch('https://api.allorigins.win/get?url='+encodeURIComponent(url))
-        .then(function(r){return r.json();})
-        .then(function(d){if(d&&d.contents)return JSON.parse(d.contents);throw new Error('failed');});
+  // allorigins /raw returns body directly, no wrapper
+  var t1=fetch('https://api.allorigins.win/raw?url='+encodeURIComponent(url))
+    .then(function(r){if(!r.ok)throw new Error('ao '+r.status);return r.json();});
+  // corsproxy.io passthrough
+  var t2=fetch('https://corsproxy.io/?'+encodeURIComponent(url))
+    .then(function(r){if(!r.ok)throw new Error('cp '+r.status);return r.text();})
+    .then(function(t){var d=JSON.parse(t);return(d&&d.contents)?JSON.parse(d.contents):d;});
+  // thingproxy last resort
+  var t3=fetch('https://thingproxy.freeboard.io/fetch/'+url)
+    .then(function(r){if(!r.ok)throw new Error('tp '+r.status);return r.json();});
+  return t1
+    .catch(function(e){console.warn('proxy1:',e.message);return t2;})
+    .catch(function(e){console.warn('proxy2:',e.message);return t3;});
+}
+
+// Try direct fetch first (works if server sends CORS headers), fall back to proxy
+function directOrProxy(url){
+  return fetch(url)
+    .then(function(r){
+      if(!r.ok) throw new Error('direct '+r.status);
+      return r.json();
+    })
+    .then(function(d){
+      // Make sure it's real ArcGIS data, not a CORS error page
+      if(d && (d.features !== undefined || d.error)) return d;
+      throw new Error('not arcgis json');
+    })
+    .catch(function(e){
+      console.warn('Direct fetch failed, trying proxy:', e.message);
+      return proxyFetch(url).catch(function(){return null;});
     });
 }
 
@@ -418,7 +442,7 @@ var SA_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/ASSESSOR/
 var ZO_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/CITY_of_SACRAMENTO/MapServer/3/query';
 
 function fetchParcel(lat,lng,addr){
-  var d=0.0003;
+  var d=0.0005; // ~55m buffer, catches most parcels
   var bbox=(lng-d)+','+(lat-d)+','+(lng+d)+','+(lat+d);
   var qs='where=1%3D1'  // where=1=1 required by ArcGIS MapServer
     +'&geometry='+bbox
@@ -428,11 +452,12 @@ function fetchParcel(lat,lng,addr){
     +'&outFields=*&returnGeometry=false&f=json';
 
   return Promise.all([
-    proxyFetch(PA_URL+'?'+qs).catch(function(){return null;}),
-    proxyFetch(SA_URL+'?'+qs).catch(function(){return null;}),
-    proxyFetch(ZO_URL+'?'+qs).catch(function(){return null;})
+    directOrProxy(PA_URL+'?'+qs),
+    directOrProxy(SA_URL+'?'+qs),
+    directOrProxy(ZO_URL+'?'+qs)
   ]).then(function(res){
     var Praw=res[0], Sraw=res[1], Zraw=res[2];
+    console.log('RAW API results:', {P:Praw, S:Sraw, Z:Zraw});
     var P=Praw&&Praw.features&&Praw.features[0]?Praw.features[0].attributes:{};
     var S=Sraw&&Sraw.features&&Sraw.features[0]?Sraw.features[0].attributes:{};
     var Z=Zraw&&Zraw.features&&Zraw.features[0]?Zraw.features[0].attributes:{};
@@ -445,9 +470,9 @@ function fetchParcel(lat,lng,addr){
       P_count:Praw&&Praw.features?Praw.features.length:0,
       S_count:Sraw&&Sraw.features?Sraw.features.length:0,
       Z_count:Zraw&&Zraw.features?Zraw.features.length:0,
-      P_err:Praw&&Praw.error?JSON.stringify(Praw.error):'',
-      S_err:Sraw&&Sraw.error?JSON.stringify(Sraw.error):'',
-      Z_err:Zraw&&Zraw.error?JSON.stringify(Zraw.error):''
+      P_err:Praw==null?'PROXY RETURNED NULL':(Praw&&Praw.error?JSON.stringify(Praw.error):''),
+      S_err:Sraw==null?'PROXY RETURNED NULL':(Sraw&&Sraw.error?JSON.stringify(Sraw.error):''),
+      Z_err:Zraw==null?'PROXY RETURNED NULL':(Zraw&&Zraw.error?JSON.stringify(Zraw.error):'')
     };
 
     var apn  = P.APN_DASH || P.PARCEL_NUMBER || P.APN10 || '—';
