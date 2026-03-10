@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -11,22 +10,22 @@
 *{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;width:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;overflow:hidden}
 
-#hdr{position:fixed;top:0;left:0;right:0;height:52px;background:var(–surf);border-bottom:1px solid var(–bdr);display:flex;align-items:center;gap:10px;padding:0 12px;z-index:1000}
-.logo{font-family:‘Bebas Neue’,sans-serif;font-size:22px;color:var(–grn);letter-spacing:.04em;flex-shrink:0}
+#hdr{position:fixed;top:0;left:0;right:0;height:52px;background:var(--surf);border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;padding:0 12px;z-index:1000}
+.logo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--grn);letter-spacing:.04em;flex-shrink:0}
 #sbox{flex:1;position:relative;min-width:0}
-#sinput-wrap{display:flex;height:34px;border:1px solid var(–bdr);background:var(–surf2)}
-#si{flex:1;background:transparent;border:none;outline:none;color:var(–txt);font-size:13px;padding:0 10px;min-width:0;font-family:‘DM Sans’,sans-serif}
-#si::placeholder{color:var(–mut)}
-#gobtn{background:var(–grn);border:none;color:#0e100d;font-family:‘DM Mono’,monospace;font-size:11px;font-weight:500;letter-spacing:.06em;padding:0 14px;cursor:pointer;text-transform:uppercase;flex-shrink:0;height:34px}
+#sinput-wrap{display:flex;height:34px;border:1px solid var(--bdr);background:var(--surf2)}
+#si{flex:1;background:transparent;border:none;outline:none;color:var(--txt);font-size:13px;padding:0 10px;min-width:0;font-family:'DM Sans',sans-serif}
+#si::placeholder{color:var(--mut)}
+#gobtn{background:var(--grn);border:none;color:#0e100d;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.06em;padding:0 14px;cursor:pointer;text-transform:uppercase;flex-shrink:0;height:34px}
 #gobtn:active{opacity:.8}
-#suggestions{position:absolute;top:36px;left:0;right:0;background:var(–surf);border:1px solid var(–bdr);border-top:none;z-index:2000;display:none;max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 8px 24px rgba(0,0,0,.6)}
+#suggestions{position:absolute;top:36px;left:0;right:0;background:var(--surf);border:1px solid var(--bdr);border-top:none;z-index:2000;display:none;max-height:260px;overflow-y:auto;-webkit-overflow-scrolling:touch;box-shadow:0 8px 24px rgba(0,0,0,.6)}
 #suggestions::-webkit-scrollbar{display:none}
-.sug-item{padding:11px 12px;cursor:pointer;border-bottom:1px solid var(–bdr)}
+.sug-item{padding:11px 12px;cursor:pointer;border-bottom:1px solid var(--bdr)}
 .sug-item:last-child{border-bottom:none}
-.sug-item:active,.sug-item.hi{background:var(–surf2)}
-.sug-main{font-size:13px;color:var(–txt);line-height:1.3}
-.sug-sub{font-size:10px;color:var(–mut);font-family:‘DM Mono’,monospace;margin-top:2px}
-.sug-msg{padding:12px;font-family:‘DM Mono’,monospace;font-size:10px;color:var(–mut);text-align:center;letter-spacing:.08em}
+.sug-item:active,.sug-item.hi{background:var(--surf2)}
+.sug-main{font-size:13px;color:var(--txt);line-height:1.3}
+.sug-sub{font-size:10px;color:var(--mut);font-family:'DM Mono',monospace;margin-top:2px}
+.sug-msg{padding:12px;font-family:'DM Mono',monospace;font-size:10px;color:var(--mut);text-align:center;letter-spacing:.08em}
 
 /* MAP: canvas for tiles, div overlay for pins */
 #map{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:1;overflow:hidden;background:#141a14;touch-action:none}
@@ -39,73 +38,72 @@ html,body{height:100%;width:100%;background:var(--bg);color:var(--txt);font-fami
 .pin-demo{width:14px;height:14px;background:#57c4ff;border:2px solid #0e100d;box-shadow:0 0 0 3px rgba(87,196,255,.2),0 2px 6px rgba(0,0,0,.5)}
 .pin-active{width:18px;height:18px;background:#b8ff57;border:2.5px solid #fff;box-shadow:0 0 0 4px rgba(184,255,87,.25),0 2px 8px rgba(0,0,0,.5)}
 .pin-search{width:16px;height:16px;background:#b8ff57;border:2.5px solid #fff;box-shadow:0 0 0 4px rgba(184,255,87,.25),0 2px 8px rgba(0,0,0,.5)}
-.pin-label{position:absolute;transform:translate(-50%,-32px);background:rgba(14,16,13,.88);color:#e6e9e4;font-family:‘DM Sans’,sans-serif;font-size:11px;font-weight:500;padding:3px 8px;white-space:nowrap;pointer-events:none}
+.pin-label{position:absolute;transform:translate(-50%,-32px);background:rgba(14,16,13,.88);color:#e6e9e4;font-family:'DM Sans',sans-serif;font-size:11px;font-weight:500;padding:3px 8px;white-space:nowrap;pointer-events:none}
 
-#panel{position:fixed;left:0;right:0;bottom:0;z-index:500;background:var(–surf);border-top:2px solid var(–bdr);display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.4,0,.2,1);transform:translateY(calc(100% - 52px));max-height:calc(100vh - 52px)}
+#panel{position:fixed;left:0;right:0;bottom:0;z-index:500;background:var(--surf);border-top:2px solid var(--bdr);display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.4,0,.2,1);transform:translateY(calc(100% - 52px));max-height:calc(100vh - 52px)}
 #panel.peek{transform:translateY(calc(100% - 115px))}
 #panel.open{transform:translateY(0)}
-#phandle{height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;cursor:pointer;border-bottom:1px solid var(–bdr);position:relative;user-select:none;-webkit-user-select:none}
-#pbar{width:32px;height:3px;background:var(–bdr);border-radius:2px;position:absolute;top:7px;left:50%;transform:translateX(-50%)}
-#ptitle{font-family:‘DM Mono’,monospace;font-size:10px;color:var(–mut);letter-spacing:.1em;text-transform:uppercase}
+#phandle{height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;cursor:pointer;border-bottom:1px solid var(--bdr);position:relative;user-select:none;-webkit-user-select:none}
+#pbar{width:32px;height:3px;background:var(--bdr);border-radius:2px;position:absolute;top:7px;left:50%;transform:translateX(-50%)}
+#ptitle{font-family:'DM Mono',monospace;font-size:10px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase}
 #paddress{font-size:13px;font-weight:600;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
-#pscore{font-family:‘Bebas Neue’,sans-serif;font-size:32px;line-height:1;color:var(–mut)}
+#pscore{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1;color:var(--mut)}
 #pbody{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1}
 #pbody::-webkit-scrollbar{display:none}
 
 @media(min-width:700px){
-#map{right:370px}
-#panel{position:fixed;top:52px;right:0;bottom:0;left:auto;width:370px;transform:none!important;border-top:none;border-left:1px solid var(–bdr);max-height:calc(100vh - 52px)}
-#phandle{display:none}
+  #map{right:370px}
+  #panel{position:fixed;top:52px;right:0;bottom:0;left:auto;width:370px;transform:none!important;border-top:none;border-left:1px solid var(--bdr);max-height:calc(100vh - 52px)}
+  #phandle{display:none}
 }
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px 20px;text-align:center;min-height:200px}
-.empty-ico{font-family:‘Bebas Neue’,sans-serif;font-size:52px;color:var(–bdr)}
-.empty-lbl{font-family:‘DM Mono’,monospace;font-size:10px;color:var(–mut);letter-spacing:.12em;text-transform:uppercase}
-.empty-txt{font-size:13px;color:var(–mut);max-width:240px;line-height:1.6}
+.empty-ico{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--bdr)}
+.empty-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--mut);letter-spacing:.12em;text-transform:uppercase}
+.empty-txt{font-size:13px;color:var(--mut);max-width:240px;line-height:1.6}
 .spin-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:48px 20px}
-.spin{width:26px;height:26px;border:2px solid var(–bdr);border-top-color:var(–grn);border-radius:50%;animation:sp .7s linear infinite}
+.spin{width:26px;height:26px;border:2px solid var(--bdr);border-top-color:var(--grn);border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-.spin-lbl{font-family:‘DM Mono’,monospace;font-size:11px;color:var(–mut);letter-spacing:.1em;text-transform:uppercase}
-.sblk{padding:16px 18px;border-bottom:1px solid var(–bdr);display:flex;align-items:center;gap:16px}
+.spin-lbl{font-family:'DM Mono',monospace;font-size:11px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase}
+.sblk{padding:16px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:16px}
 .sring{position:relative;width:66px;height:66px;flex-shrink:0}
 .sring svg{width:66px;height:66px;transform:rotate(-90deg)}
-.snum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:‘Bebas Neue’,sans-serif;font-size:20px}
-.smeta{font-family:‘DM Mono’,monospace;font-size:10px;color:var(–mut);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.snum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:20px}
+.smeta{font-family:'DM Mono',monospace;font-size:10px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
 .sverdict{font-size:15px;font-weight:600;line-height:1.2}
-.ssub{font-size:11px;color:var(–mut);margin-top:3px}
-.sec{border-bottom:1px solid var(–bdr)}
+.ssub{font-size:11px;color:var(--mut);margin-top:3px}
+.sec{border-bottom:1px solid var(--bdr)}
 .shead{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;cursor:pointer;user-select:none}
-.shead:active{background:var(–surf2)}
-.sname{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(–mut)}
-.schev{color:var(–mut);font-size:12px;transition:transform .2s;display:inline-block}
+.shead:active{background:var(--surf2)}
+.sname{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
+.schev{color:var(--mut);font-size:12px;transition:transform .2s;display:inline-block}
 .schev.open{transform:rotate(180deg)}
 .sbody{padding:0 18px 13px}
 .tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
-.tag{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:.06em;padding:3px 8px;text-transform:uppercase;font-weight:500;border:1px solid}
-.tg{background:rgba(184,255,87,.1);color:var(–grn);border-color:rgba(184,255,87,.25)}
-.tb{background:rgba(87,196,255,.08);color:var(–blu);border-color:rgba(87,196,255,.2)}
-.tw{background:rgba(255,179,71,.08);color:var(–warn);border-color:rgba(255,179,71,.2)}
-.tm{background:transparent;color:var(–mut);border-color:var(–bdr)}
+.tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;padding:3px 8px;text-transform:uppercase;font-weight:500;border:1px solid}
+.tg{background:rgba(184,255,87,.1);color:var(--grn);border-color:rgba(184,255,87,.25)}
+.tb{background:rgba(87,196,255,.08);color:var(--blu);border-color:rgba(87,196,255,.2)}
+.tw{background:rgba(255,179,71,.08);color:var(--warn);border-color:rgba(255,179,71,.2)}
+.tm{background:transparent;color:var(--mut);border-color:var(--bdr)}
 .elig{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .elig:last-child{border-bottom:none}
 .edot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
-.dg{background:var(–grn);box-shadow:0 0 5px rgba(184,255,87,.5)}
-.dw{background:var(–warn)}
-.dm{background:var(–bdr)}
+.dg{background:var(--grn);box-shadow:0 0 5px rgba(184,255,87,.5)}
+.dw{background:var(--warn)}
+.dm{background:var(--bdr)}
 .etitle{font-size:13px;font-weight:500;margin-bottom:2px}
-.edesc{font-size:11px;color:var(–mut);line-height:1.5}
+.edesc{font-size:11px;color:var(--mut);line-height:1.5}
 .dr{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .dr:last-child{border-bottom:none}
-.dl{font-family:‘DM Mono’,monospace;font-size:11px;color:var(–mut)}
-.dv{font-family:‘DM Mono’,monospace;font-size:12px;color:var(–txt)}
-.dv.hi{color:var(–grn)}
-.civic{margin:13px 18px;padding:12px 14px;background:rgba(87,196,255,.05);border:1px solid rgba(87,196,255,.18);border-left:3px solid var(–blu)}
-.clbl{font-family:‘DM Mono’,monospace;font-size:10px;color:var(–blu);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-.ctxt{font-size:12px;color:var(–mut);line-height:1.6}
-.src-live{margin:10px 18px 0;padding:8px 12px;background:rgba(184,255,87,.05);border:1px solid rgba(184,255,87,.15);font-family:‘DM Mono’,monospace;font-size:9px;color:rgba(184,255,87,.6);letter-spacing:.05em;line-height:1.7}
-.src-est{margin:10px 18px 0;padding:8px 12px;background:rgba(255,179,71,.05);border:1px solid rgba(255,179,71,.2);font-family:‘DM Mono’,monospace;font-size:9px;color:var(–warn);letter-spacing:.05em;line-height:1.7}
-.fnote{padding:8px 18px 24px;font-family:‘DM Mono’,monospace;font-size:9px;color:var(–mut);line-height:1.8}
+.dl{font-family:'DM Mono',monospace;font-size:11px;color:var(--mut)}
+.dv{font-family:'DM Mono',monospace;font-size:12px;color:var(--txt)}
+.dv.hi{color:var(--grn)}
+.civic{margin:13px 18px;padding:12px 14px;background:rgba(87,196,255,.05);border:1px solid rgba(87,196,255,.18);border-left:3px solid var(--blu)}
+.clbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--blu);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.ctxt{font-size:12px;color:var(--mut);line-height:1.6}
+.src-live{margin:10px 18px 0;padding:8px 12px;background:rgba(184,255,87,.05);border:1px solid rgba(184,255,87,.15);font-family:'DM Mono',monospace;font-size:9px;color:rgba(184,255,87,.6);letter-spacing:.05em;line-height:1.7}
+.src-est{margin:10px 18px 0;padding:8px 12px;background:rgba(255,179,71,.05);border:1px solid rgba(255,179,71,.2);font-family:'DM Mono',monospace;font-size:9px;color:var(--warn);letter-spacing:.05em;line-height:1.7}
+.fnote{padding:8px 18px 24px;font-family:'DM Mono',monospace;font-size:9px;color:var(--mut);line-height:1.8}
 </style>
-
 </head>
 <body>
 <div id="hdr">
@@ -421,32 +419,43 @@ var ZO_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/CITY_of_S
 
 function fetchParcel(lat,lng,addr){
   var qs='geometry='+lng+','+lat+'&geometryType=esriGeometryPoint&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&f=json';
+  // Also try layer 0 as backup for parcels
   return Promise.all([
     proxyFetch(PA_URL+'?'+qs).catch(function(){return null;}),
     proxyFetch(SA_URL+'?'+qs).catch(function(){return null;}),
     proxyFetch(ZO_URL+'?'+qs).catch(function(){return null;})
   ]).then(function(res){
-    var P=res[0]&&res[0].features&&res[0].features[0]?res[0].features[0].attributes:{};
-    var S=res[1]&&res[1].features&&res[1].features[0]?res[1].features[0].attributes:{};
-    var Z=res[2]&&res[2].features&&res[2].features[0]?res[2].features[0].attributes:{};
-    console.log('PARCELS (layer 22):',P);
-    console.log('SALES/ASSESSOR (layer 1):',S);
-    console.log('ZONING (layer 3):',Z);
+    var Praw=res[0], Sraw=res[1], Zraw=res[2];
+    var P=Praw&&Praw.features&&Praw.features[0]?Praw.features[0].attributes:{};
+    var S=Sraw&&Sraw.features&&Sraw.features[0]?Sraw.features[0].attributes:{};
+    var Z=Zraw&&Zraw.features&&Zraw.features[0]?Zraw.features[0].attributes:{};
 
-    // ALL PARCELS layer 22 — confirmed field names
+    // Store everything for debug display
+    window._dbg={
+      P_keys: Object.keys(P).filter(function(k){return P[k]!=null&&P[k]!=='';}),
+      S_keys: Object.keys(S).filter(function(k){return S[k]!=null&&S[k]!=='';}),
+      Z_keys: Object.keys(Z).filter(function(k){return Z[k]!=null&&Z[k]!=='';}),
+      P:P, S:S, Z:Z,
+      P_count: Praw&&Praw.features?Praw.features.length:0,
+      S_count: Sraw&&Sraw.features?Sraw.features.length:0,
+      Z_count: Zraw&&Zraw.features?Zraw.features.length:0
+    };
+
+    // ALL PARCELS layer 22 — confirmed field names from schema
     var apn  = P.APN_DASH || P.PARCEL_NUMBER || P.APN10 || '—';
-    var lot  = fl(P.LOTSIZE);                          // confirmed field name
-    var zone = Z.ZONE || Z.BASE_ZONE || P.ZONE_ || '—'; // Z.ZONE confirmed, P.ZONE_ confirmed fallback
+    var lot  = fl(P.LOTSIZE);
+    var zone = Z.ZONE || Z.BASE_ZONE || P.ZONE_ || '—';
     var lv   = fl(S.NET_VALUE || S.LAND_VALUE || S.SALE_PRICE);
     var iv   = fl(S.IMPROVEMENT_VALUE || S.IMP_VALUE);
     var yr   = parseInt(S.YEAR_BUILT || S.YR_BLT) || 0;
     var la   = fl(S.LIVING_AREA || S.BLDG_SQFT || S.SQ_FEET);
     var units= parseInt(P.UNITS || S.UNITS || S.NO_UNITS) || 1;
 
-    // lot size fallback: LOTSIZE is in acres on some county datasets — convert if suspiciously small
-    if(lot>0 && lot<50) lot = Math.round(lot*43560); // acres → sqft
+    // LOTSIZE in this layer is stored in sq ft directly (confirmed ~6000-8000 range for SFR)
+    // If it comes back in acres (suspiciously small), convert
+    if(lot>0 && lot<200) lot = Math.round(lot*43560);
 
-    // SHAPE.STArea() is in state plane feet² — use as ultimate fallback for lot size
+    // Ultimate fallback: SHAPE.STArea() returns state-plane sq ft
     if(!lot && P['SHAPE.STArea()']>0) lot = Math.round(P['SHAPE.STArea()']);
 
     var hasData = (apn!=='—' || lot>0 || zone!=='—');
@@ -526,6 +535,22 @@ function render(p,a,src){
   var srcHtml=src==='demo'?'<div class="src-live">✓ DEMO DATA · Hardcoded real Sacramento parcel</div>':
     src==='live'?'<div class="src-live">✓ LIVE DATA · Sacramento County Assessor + GIS + Zoning</div>':
     '<div class="src-est">⚠ PARCEL API NOT REACHED · Check connection and try again</div>';
+
+  // Debug section — shows raw API fields so we can fix mappings
+  var dbgHtml='';
+  if(src!=='demo' && window._dbg){
+    var d=window._dbg;
+    var pFields=d.P_keys.map(function(k){return k+'='+JSON.stringify(d.P[k]);}).join('\n');
+    var sFields=d.S_keys.map(function(k){return k+'='+JSON.stringify(d.S[k]);}).join('\n');
+    var zFields=d.Z_keys.map(function(k){return k+'='+JSON.stringify(d.Z[k]);}).join('\n');
+    dbgHtml='<div style="margin:10px 18px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--bdr)">'
+      +'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--mut);letter-spacing:.08em;margin-bottom:6px">▸ RAW API DEBUG ('+d.P_count+' parcel feat, '+d.S_count+' sales feat, '+d.Z_count+' zone feat)</div>'
+      +'<div style="font-family:DM Mono,monospace;font-size:8px;color:#57c4ff;white-space:pre-wrap;line-height:1.6;word-break:break-all">'
+      +(pFields?'PARCELS:\n'+pFields+'\n\n':'PARCELS: no features\n\n')
+      +(sFields?'SALES:\n'+sFields+'\n\n':'SALES: no features\n\n')
+      +(zFields?'ZONING:\n'+zFields:'ZONING: no features')
+      +'</div></div>';
+  }
   document.getElementById('pbody').innerHTML=
     '<div class="sblk"><div class="sring"><svg viewBox="0 0 68 68">'+
     '<circle cx="34" cy="34" r="27" fill="none" stroke="var(--bdr)" stroke-width="5"/>'+
@@ -537,9 +562,8 @@ function render(p,a,src){
     sec('Physical & Zoning',dr('Zoning',p.zone||'—',true)+dr('Lot Size',lot)+dr('Existing Units',p.units||'—')+dr('Year Built',p.yr||'—')+dr('Living Area',la),'phys')+
     sec('Financial Signals',dr('Est. Max Units',a.max>1?'Up to '+a.max:'1 unit',true)+dr('Est. Buildable',bld)+dr('Assessed Land',lv)+dr('Total Assessed',tv),'fin')+
     '<div class="civic"><div class="clbl">Homeowner Note</div><div class="ctxt">'+civic+'</div></div>'+
-    srcHtml+'<div class="fnote">Screening only — verify with local jurisdiction before acting on this analysis.</div>';
+    srcHtml+'<div class="fnote">Screening only — verify with local jurisdiction before acting on this analysis.</div>'+dbgHtml;
 }
 </script>
-
 </body>
 </html>
