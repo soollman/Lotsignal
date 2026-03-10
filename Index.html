@@ -418,10 +418,10 @@ var SA_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/ASSESSOR/
 var ZO_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/CITY_of_SACRAMENTO/MapServer/3/query';
 
 function fetchParcel(lat,lng,addr){
-  // Use a small bounding box instead of a point — more reliable with State Plane servers
-  var d=0.0003; // ~30m buffer
+  var d=0.0003;
   var bbox=(lng-d)+','+(lat-d)+','+(lng+d)+','+(lat+d);
-  var qs='geometry='+bbox
+  var qs='where=1%3D1'  // where=1=1 required by ArcGIS MapServer
+    +'&geometry='+bbox
     +'&geometryType=esriGeometryEnvelope'
     +'&inSR=4326&outSR=4326'
     +'&spatialRel=esriSpatialRelIntersects'
