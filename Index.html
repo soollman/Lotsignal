@@ -418,8 +418,15 @@ var SA_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/ASSESSOR/
 var ZO_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/CITY_of_SACRAMENTO/MapServer/3/query';
 
 function fetchParcel(lat,lng,addr){
-  var qs='geometry='+lng+','+lat+'&geometryType=esriGeometryPoint&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&f=json';
-  // Also try layer 0 as backup for parcels
+  // Use a small bounding box instead of a point — more reliable with State Plane servers
+  var d=0.0003; // ~30m buffer
+  var bbox=(lng-d)+','+(lat-d)+','+(lng+d)+','+(lat+d);
+  var qs='geometry='+bbox
+    +'&geometryType=esriGeometryEnvelope'
+    +'&inSR=4326&outSR=4326'
+    +'&spatialRel=esriSpatialRelIntersects'
+    +'&outFields=*&returnGeometry=false&f=json';
+
   return Promise.all([
     proxyFetch(PA_URL+'?'+qs).catch(function(){return null;}),
     proxyFetch(SA_URL+'?'+qs).catch(function(){return null;}),
@@ -430,18 +437,19 @@ function fetchParcel(lat,lng,addr){
     var S=Sraw&&Sraw.features&&Sraw.features[0]?Sraw.features[0].attributes:{};
     var Z=Zraw&&Zraw.features&&Zraw.features[0]?Zraw.features[0].attributes:{};
 
-    // Store everything for debug display
     window._dbg={
-      P_keys: Object.keys(P).filter(function(k){return P[k]!=null&&P[k]!=='';}),
-      S_keys: Object.keys(S).filter(function(k){return S[k]!=null&&S[k]!=='';}),
-      Z_keys: Object.keys(Z).filter(function(k){return Z[k]!=null&&Z[k]!=='';}),
-      P:P, S:S, Z:Z,
-      P_count: Praw&&Praw.features?Praw.features.length:0,
-      S_count: Sraw&&Sraw.features?Sraw.features.length:0,
-      Z_count: Zraw&&Zraw.features?Zraw.features.length:0
+      P_keys:Object.keys(P).filter(function(k){return P[k]!=null&&P[k]!=='';}),
+      S_keys:Object.keys(S).filter(function(k){return S[k]!=null&&S[k]!=='';}),
+      Z_keys:Object.keys(Z).filter(function(k){return Z[k]!=null&&Z[k]!=='';}),
+      P:P,S:S,Z:Z,
+      P_count:Praw&&Praw.features?Praw.features.length:0,
+      S_count:Sraw&&Sraw.features?Sraw.features.length:0,
+      Z_count:Zraw&&Zraw.features?Zraw.features.length:0,
+      P_err:Praw&&Praw.error?JSON.stringify(Praw.error):'',
+      S_err:Sraw&&Sraw.error?JSON.stringify(Sraw.error):'',
+      Z_err:Zraw&&Zraw.error?JSON.stringify(Zraw.error):''
     };
 
-    // ALL PARCELS layer 22 — confirmed field names from schema
     var apn  = P.APN_DASH || P.PARCEL_NUMBER || P.APN10 || '—';
     var lot  = fl(P.LOTSIZE);
     var zone = Z.ZONE || Z.BASE_ZONE || P.ZONE_ || '—';
@@ -451,14 +459,10 @@ function fetchParcel(lat,lng,addr){
     var la   = fl(S.LIVING_AREA || S.BLDG_SQFT || S.SQ_FEET);
     var units= parseInt(P.UNITS || S.UNITS || S.NO_UNITS) || 1;
 
-    // LOTSIZE in this layer is stored in sq ft directly (confirmed ~6000-8000 range for SFR)
-    // If it comes back in acres (suspiciously small), convert
     if(lot>0 && lot<200) lot = Math.round(lot*43560);
-
-    // Ultimate fallback: SHAPE.STArea() returns state-plane sq ft
     if(!lot && P['SHAPE.STArea()']>0) lot = Math.round(P['SHAPE.STArea()']);
 
-    var hasData = (apn!=='—' || lot>0 || zone!=='—');
+    var hasData=(apn!=='—'||lot>0||zone!=='—');
     return{p:{address:addr,apn:apn,zone:zone,lot:lot,units:units,yr:yr,lv:lv,iv:iv,la:la},
       src:hasData?'live':'no-data'};
   });
@@ -546,6 +550,9 @@ function render(p,a,src){
     dbgHtml='<div style="margin:10px 18px;padding:10px 12px;background:rgba(255,255,255,.03);border:1px solid var(--bdr)">'
       +'<div style="font-family:DM Mono,monospace;font-size:9px;color:var(--mut);letter-spacing:.08em;margin-bottom:6px">▸ RAW API DEBUG ('+d.P_count+' parcel feat, '+d.S_count+' sales feat, '+d.Z_count+' zone feat)</div>'
       +'<div style="font-family:DM Mono,monospace;font-size:8px;color:#57c4ff;white-space:pre-wrap;line-height:1.6;word-break:break-all">'
+      +(d.P_err?'PARCELS ERROR: '+d.P_err+'\n\n':'')
+      +(d.S_err?'SALES ERROR: '+d.S_err+'\n\n':'')
+      +(d.Z_err?'ZONING ERROR: '+d.Z_err+'\n\n':'')
       +(pFields?'PARCELS:\n'+pFields+'\n\n':'PARCELS: no features\n\n')
       +(sFields?'SALES:\n'+sFields+'\n\n':'SALES: no features\n\n')
       +(zFields?'ZONING:\n'+zFields:'ZONING: no features')
