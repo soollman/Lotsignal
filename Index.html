@@ -3,87 +3,108 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>LotSignal — Sacramento Development Intelligence</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Bebas+Neue&family=DM+Sans:wght@400;500;600&display=swap');
 :root{--bg:#0e100d;--surf:#141714;--surf2:#1b1e1a;--bdr:#272b26;--grn:#b8ff57;--blu:#57c4ff;--warn:#ffb347;--red:#ff5f5f;--txt:#e6e9e4;--mut:#676b64}
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+*{margin:0;padding:0;box-sizing:border-box}
 html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans',sans-serif;overflow:hidden}
-#hdr{position:fixed;top:0;left:0;right:0;height:52px;background:var(--surf);border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px;padding:0 12px;z-index:200}
-.logo{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--grn);letter-spacing:.04em;flex-shrink:0}
-#sbox{flex:1;display:flex;height:34px;border:1px solid var(--bdr);background:var(--surf2);min-width:0}
-#sbox input{flex:1;background:transparent;border:none;outline:none;color:var(--txt);font-size:13px;padding:0 10px;min-width:0;font-family:'DM Sans',sans-serif}
-#sbox input::placeholder{color:var(--mut)}
-#gobtn{background:var(--grn);border:none;color:#0e100d;font-family:'DM Mono',monospace;font-size:11px;font-weight:500;letter-spacing:.06em;padding:0 14px;cursor:pointer;text-transform:uppercase}
+
+#hdr{position:fixed;top:0;left:0;right:0;height:52px;background:var(–surf);border-bottom:1px solid var(–bdr);display:flex;align-items:center;gap:10px;padding:0 12px;z-index:1000}
+.logo{font-family:‘Bebas Neue’,sans-serif;font-size:22px;color:var(–grn);letter-spacing:.04em;flex-shrink:0}
+#sbox{flex:1;display:flex;height:34px;border:1px solid var(–bdr);background:var(–surf2);min-width:0}
+#sbox input{flex:1;background:transparent;border:none;outline:none;color:var(–txt);font-size:13px;padding:0 10px;min-width:0;font-family:‘DM Sans’,sans-serif}
+#sbox input::placeholder{color:var(–mut)}
+#gobtn{background:var(–grn);border:none;color:#0e100d;font-family:‘DM Mono’,monospace;font-size:11px;font-weight:500;letter-spacing:.06em;padding:0 14px;cursor:pointer;text-transform:uppercase;flex-shrink:0}
 #gobtn:active{opacity:.8}
-#mapCanvas{position:fixed;top:52px;left:0;right:0;bottom:0;cursor:grab;touch-action:none;display:block}
-#mapCanvas.dragging{cursor:grabbing}
-#hint{position:fixed;bottom:68px;left:12px;z-index:100;background:rgba(14,16,13,.9);border:1px solid var(--bdr);padding:5px 10px;font-family:'DM Mono',monospace;font-size:9px;color:var(--mut);letter-spacing:.06em;pointer-events:none}
-#panel{position:fixed;left:0;right:0;bottom:0;z-index:150;background:var(--surf);border-top:2px solid var(--bdr);display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.4,0,.2,1);transform:translateY(calc(100% - 52px));max-height:calc(100vh - 52px)}
+
+#map{position:fixed;top:52px;left:0;right:0;bottom:0;z-index:1}
+.leaflet-container{background:#1a1f1a}
+
+/* dark map filter */
+.leaflet-tile{filter:invert(1) hue-rotate(180deg) brightness(0.75) contrast(0.9) saturate(0.6)}
+
+#panel{position:fixed;left:0;right:0;bottom:0;z-index:500;background:var(–surf);border-top:2px solid var(–bdr);display:flex;flex-direction:column;transition:transform .3s cubic-bezier(.4,0,.2,1);transform:translateY(calc(100% - 52px));max-height:calc(100vh - 52px)}
 #panel.peek{transform:translateY(calc(100% - 115px))}
 #panel.open{transform:translateY(0)}
-#phandle{height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;cursor:pointer;border-bottom:1px solid var(--bdr);position:relative;user-select:none}
-#pbar{width:32px;height:3px;background:var(--bdr);border-radius:2px;position:absolute;top:7px;left:50%;transform:translateX(-50%)}
-#ptitle{font-family:'DM Mono',monospace;font-size:10px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase}
+#phandle{height:52px;flex-shrink:0;display:flex;align-items:center;justify-content:space-between;padding:0 16px;cursor:pointer;border-bottom:1px solid var(–bdr);position:relative;user-select:none;-webkit-user-select:none}
+#pbar{width:32px;height:3px;background:var(–bdr);border-radius:2px;position:absolute;top:7px;left:50%;transform:translateX(-50%)}
+#ptitle{font-family:‘DM Mono’,monospace;font-size:10px;color:var(–mut);letter-spacing:.1em;text-transform:uppercase}
 #paddress{font-size:13px;font-weight:600;max-width:210px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;margin-top:1px}
-#pscore{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1;color:var(--mut)}
+#pscore{font-family:‘Bebas Neue’,sans-serif;font-size:32px;line-height:1;color:var(–mut)}
 #pbody{overflow-y:auto;-webkit-overflow-scrolling:touch;flex:1}
 #pbody::-webkit-scrollbar{display:none}
+
 @media(min-width:700px){
-  #mapCanvas{right:370px}
-  #hint{bottom:16px}
-  #panel{position:fixed;top:52px;right:0;bottom:0;left:auto;width:370px;transform:none!important;border-top:none;border-left:1px solid var(--bdr);max-height:calc(100vh - 52px)}
-  #phandle{display:none}
+#map{right:370px}
+#panel{position:fixed;top:52px;right:0;bottom:0;left:auto;width:370px;transform:none!important;border-top:none;border-left:1px solid var(–bdr);max-height:calc(100vh - 52px)}
+#phandle{display:none}
 }
+
+/* leaflet overrides */
+.leaflet-control-zoom{border:1px solid var(–bdr)!important;background:var(–surf)!important}
+.leaflet-control-zoom a{background:var(–surf)!important;color:var(–txt)!important;border-bottom:1px solid var(–bdr)!important}
+.leaflet-control-attribution{background:rgba(14,16,13,.7)!important;color:var(–mut)!important;font-size:9px!important}
+.leaflet-control-attribution a{color:var(–mut)!important}
+
+/* custom pin styles */
+.pin-demo{width:14px;height:14px;background:#57c4ff;border:2px solid #0e100d;border-radius:50%;box-shadow:0 0 10px rgba(87,196,255,0.5)}
+.pin-demo.active{background:#b8ff57;border-color:#fff;box-shadow:0 0 14px rgba(184,255,87,0.6);width:18px;height:18px}
+.pin-search{width:16px;height:16px;background:#b8ff57;border:2.5px solid #fff;border-radius:50%;box-shadow:0 0 14px rgba(184,255,87,0.5)}
+
 .empty{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:48px 20px;text-align:center;min-height:200px}
-.empty-ico{font-family:'Bebas Neue',sans-serif;font-size:52px;color:var(--bdr)}
-.empty-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--mut);letter-spacing:.12em;text-transform:uppercase}
-.empty-txt{font-size:13px;color:var(--mut);max-width:240px;line-height:1.6}
+.empty-ico{font-family:‘Bebas Neue’,sans-serif;font-size:52px;color:var(–bdr)}
+.empty-lbl{font-family:‘DM Mono’,monospace;font-size:10px;color:var(–mut);letter-spacing:.12em;text-transform:uppercase}
+.empty-txt{font-size:13px;color:var(–mut);max-width:240px;line-height:1.6}
 .spin-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:48px 20px}
-.spin{width:26px;height:26px;border:2px solid var(--bdr);border-top-color:var(--grn);border-radius:50%;animation:sp .7s linear infinite}
+.spin{width:26px;height:26px;border:2px solid var(–bdr);border-top-color:var(–grn);border-radius:50%;animation:sp .7s linear infinite}
 @keyframes sp{to{transform:rotate(360deg)}}
-.spin-lbl{font-family:'DM Mono',monospace;font-size:11px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase}
-.sblk{padding:16px 18px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:16px}
+.spin-lbl{font-family:‘DM Mono’,monospace;font-size:11px;color:var(–mut);letter-spacing:.1em;text-transform:uppercase}
+
+.sblk{padding:16px 18px;border-bottom:1px solid var(–bdr);display:flex;align-items:center;gap:16px}
 .sring{position:relative;width:66px;height:66px;flex-shrink:0}
 .sring svg{width:66px;height:66px;transform:rotate(-90deg)}
-.snum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:20px}
-.smeta{font-family:'DM Mono',monospace;font-size:10px;color:var(--mut);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
+.snum{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:‘Bebas Neue’,sans-serif;font-size:20px}
+.smeta{font-family:‘DM Mono’,monospace;font-size:10px;color:var(–mut);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
 .sverdict{font-size:15px;font-weight:600;line-height:1.2}
-.ssub{font-size:11px;color:var(--mut);margin-top:3px}
-.sec{border-bottom:1px solid var(--bdr)}
+.ssub{font-size:11px;color:var(–mut);margin-top:3px}
+.sec{border-bottom:1px solid var(–bdr)}
 .shead{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;cursor:pointer;user-select:none}
-.shead:active{background:var(--surf2)}
-.sname{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}
-.schev{color:var(--mut);font-size:12px;transition:transform .2s;display:inline-block}
+.shead:active{background:var(–surf2)}
+.sname{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(–mut)}
+.schev{color:var(–mut);font-size:12px;transition:transform .2s;display:inline-block}
 .schev.open{transform:rotate(180deg)}
 .sbody{padding:0 18px 13px}
 .tags{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}
-.tag{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:.06em;padding:3px 8px;text-transform:uppercase;font-weight:500;border:1px solid}
-.tg{background:rgba(184,255,87,.1);color:var(--grn);border-color:rgba(184,255,87,.25)}
-.tb{background:rgba(87,196,255,.08);color:var(--blu);border-color:rgba(87,196,255,.2)}
-.tw{background:rgba(255,179,71,.08);color:var(--warn);border-color:rgba(255,179,71,.2)}
-.tm{background:transparent;color:var(--mut);border-color:var(--bdr)}
+.tag{font-family:‘DM Mono’,monospace;font-size:10px;letter-spacing:.06em;padding:3px 8px;text-transform:uppercase;font-weight:500;border:1px solid}
+.tg{background:rgba(184,255,87,.1);color:var(–grn);border-color:rgba(184,255,87,.25)}
+.tb{background:rgba(87,196,255,.08);color:var(–blu);border-color:rgba(87,196,255,.2)}
+.tw{background:rgba(255,179,71,.08);color:var(–warn);border-color:rgba(255,179,71,.2)}
+.tm{background:transparent;color:var(–mut);border-color:var(–bdr)}
 .elig{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .elig:last-child{border-bottom:none}
 .edot{width:8px;height:8px;border-radius:50%;margin-top:5px;flex-shrink:0}
-.dg{background:var(--grn);box-shadow:0 0 5px rgba(184,255,87,.5)}
-.dw{background:var(--warn)}
-.dm{background:var(--bdr)}
+.dg{background:var(–grn);box-shadow:0 0 5px rgba(184,255,87,.5)}
+.dw{background:var(–warn)}
+.dm{background:var(–bdr)}
 .etitle{font-size:13px;font-weight:500;margin-bottom:2px}
-.edesc{font-size:11px;color:var(--mut);line-height:1.5}
+.edesc{font-size:11px;color:var(–mut);line-height:1.5}
 .dr{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .dr:last-child{border-bottom:none}
-.dl{font-family:'DM Mono',monospace;font-size:11px;color:var(--mut)}
-.dv{font-family:'DM Mono',monospace;font-size:12px;color:var(--txt)}
-.dv.hi{color:var(--grn)}
-.civic{margin:13px 18px;padding:12px 14px;background:rgba(87,196,255,.05);border:1px solid rgba(87,196,255,.18);border-left:3px solid var(--blu)}
-.clbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--blu);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
-.ctxt{font-size:12px;color:var(--mut);line-height:1.6}
-.src-live{margin:10px 18px 0;padding:8px 12px;background:rgba(184,255,87,.05);border:1px solid rgba(184,255,87,.15);font-family:'DM Mono',monospace;font-size:9px;color:rgba(184,255,87,.6);letter-spacing:.05em;line-height:1.7}
-.src-est{margin:10px 18px 0;padding:8px 12px;background:rgba(255,179,71,.05);border:1px solid rgba(255,179,71,.2);font-family:'DM Mono',monospace;font-size:9px;color:var(--warn);letter-spacing:.05em;line-height:1.7}
-.fnote{padding:8px 18px 24px;font-family:'DM Mono',monospace;font-size:9px;color:var(--mut);line-height:1.8}
+.dl{font-family:‘DM Mono’,monospace;font-size:11px;color:var(–mut)}
+.dv{font-family:‘DM Mono’,monospace;font-size:12px;color:var(–txt)}
+.dv.hi{color:var(–grn)}
+.civic{margin:13px 18px;padding:12px 14px;background:rgba(87,196,255,.05);border:1px solid rgba(87,196,255,.18);border-left:3px solid var(–blu)}
+.clbl{font-family:‘DM Mono’,monospace;font-size:10px;color:var(–blu);letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px}
+.ctxt{font-size:12px;color:var(–mut);line-height:1.6}
+.src-live{margin:10px 18px 0;padding:8px 12px;background:rgba(184,255,87,.05);border:1px solid rgba(184,255,87,.15);font-family:‘DM Mono’,monospace;font-size:9px;color:rgba(184,255,87,.6);letter-spacing:.05em;line-height:1.7}
+.src-est{margin:10px 18px 0;padding:8px 12px;background:rgba(255,179,71,.05);border:1px solid rgba(255,179,71,.2);font-family:‘DM Mono’,monospace;font-size:9px;color:var(–warn);letter-spacing:.05em;line-height:1.7}
+.fnote{padding:8px 18px 24px;font-family:‘DM Mono’,monospace;font-size:9px;color:var(–mut);line-height:1.8}
 </style>
+
 </head>
 <body>
 <div id="hdr">
@@ -93,8 +114,9 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
     <button id="gobtn">GO</button>
   </div>
 </div>
-<canvas id="mapCanvas"></canvas>
-<div id="hint">● BLUE = DEMO PINS · DRAG TO PAN · SCROLL TO ZOOM</div>
+
+<div id="map"></div>
+
 <div id="panel">
   <div id="phandle">
     <div id="pbar"></div>
@@ -108,342 +130,261 @@ html,body{height:100%;background:var(--bg);color:var(--txt);font-family:'DM Sans
     <div class="empty">
       <div class="empty-ico">◎</div>
       <div class="empty-lbl">No parcel selected</div>
-      <div class="empty-txt">Type a Sacramento address above and press GO, or tap a blue demo pin on the map.</div>
+      <div class="empty-txt">Type a Sacramento address above and press GO, or tap a demo pin on the map.</div>
     </div>
   </div>
 </div>
+
 <script>
-// Public CORS proxies - tried in order until one works
-var PROXIES=[
-  function(url){return'https://corsproxy.io/?url='+encodeURIComponent(url);},
-  function(url){return'https://api.allorigins.win/get?url='+encodeURIComponent(url);},
+// ── MAP SETUP ─────────────────────────────────────────────────────────────────
+var map = L.map('map', {
+  center: [38.5816, -121.4944],
+  zoom: 13,
+  zoomControl: true,
+  attributionControl: true
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 19
+}).addTo(map);
+
+// ── DEMO DATA ─────────────────────────────────────────────────────────────────
+var DEMOS = [
+  {id:'eastsac', lat:38.5650,lng:-121.4620,label:'East Sac SFR',      address:'4521 H St, Sacramento',        apn:'009-0213-004',zone:'R-1B',   lot:6250, units:1,yr:1948,lv:185000,iv:310000,la:1380},
+  {id:'midtown', lat:38.5720,lng:-121.5030,label:'Midtown MF',         address:'2130 21st St, Sacramento',     apn:'007-0089-012',zone:'R-3A-SP',lot:5400, units:4,yr:1962,lv:320000,iv:480000,la:3200},
+  {id:'northsac',lat:38.5890,lng:-121.4780,label:'North Sac SFR',      address:'3802 Arcade Blvd, Sacramento', apn:'225-0041-008',zone:'R-1',    lot:7800, units:1,yr:1955,lv:145000,iv:220000,la:1650},
+  {id:'oakpark', lat:38.5530,lng:-121.4750,label:'Oak Park Duplex',    address:'3540 4th Ave, Sacramento',     apn:'012-0189-003',zone:'R-2',    lot:6000, units:2,yr:1938,lv:165000,iv:185000,la:1820},
+  {id:'downtown',lat:38.5804,lng:-121.4934,label:'Downtown Commercial',address:'1415 L St, Sacramento',        apn:'006-0162-001',zone:'C-3-SP', lot:8200, units:0,yr:1965,lv:890000,iv:1200000,la:12000},
+  {id:'landpark',lat:38.5612,lng:-121.5150,label:'Land Park SFR',      address:'1022 Vallejo Way, Sacramento', apn:'014-0231-006',zone:'R-1A',   lot:8100, units:1,yr:1942,lv:210000,iv:445000,la:1920},
 ];
 
-var DEMOS=[
-{id:‘eastsac’, lat:38.5650,lng:-121.4620,label:‘East Sac SFR’,      address:‘4521 H St, Sacramento’,        apn:‘009-0213-004’,zone:‘R-1B’,   lot:6250,units:1,yr:1948,lv:185000,iv:310000,la:1380},
-{id:‘midtown’, lat:38.5720,lng:-121.5030,label:‘Midtown MF’,         address:‘2130 21st St, Sacramento’,     apn:‘007-0089-012’,zone:‘R-3A-SP’,lot:5400,units:4,yr:1962,lv:320000,iv:480000,la:3200},
-{id:‘northsac’,lat:38.5890,lng:-121.4780,label:‘North Sac SFR’,      address:‘3802 Arcade Blvd, Sacramento’, apn:‘225-0041-008’,zone:‘R-1’,    lot:7800,units:1,yr:1955,lv:145000,iv:220000,la:1650},
-{id:‘oakpark’, lat:38.5530,lng:-121.4750,label:‘Oak Park Duplex’,    address:‘3540 4th Ave, Sacramento’,     apn:‘012-0189-003’,zone:‘R-2’,    lot:6000,units:2,yr:1938,lv:165000,iv:185000,la:1820},
-{id:‘downtown’,lat:38.5804,lng:-121.4934,label:‘Downtown Commercial’,address:‘1415 L St, Sacramento’,        apn:‘006-0162-001’,zone:‘C-3-SP’, lot:8200,units:0,yr:1965,lv:890000,iv:1200000,la:12000},
-{id:‘landpark’,lat:38.5612,lng:-121.5150,label:‘Land Park SFR’,      address:‘1022 Vallejo Way, Sacramento’, apn:‘014-0231-006’,zone:‘R-1A’,   lot:8100,units:1,yr:1942,lv:210000,iv:445000,la:1920},
-];
-
-// MAP
-var canvas=document.getElementById(‘mapCanvas’),ctx=canvas.getContext(‘2d’);
-var M={cx:-121.4944,cy:38.5816,zoom:13,tiles:{},dragging:false,lx:0,ly:0,moved:false};
-var selId=null,selLat=null,selLng=null,DPR=window.devicePixelRatio||1;
-
-function resize(){
-var W=window.innerWidth,H=window.innerHeight-52;
-canvas.width=W*DPR;canvas.height=H*DPR;
-canvas.style.width=W+‘px’;canvas.style.height=H+‘px’;
-ctx.setTransform(DPR,0,0,DPR,0,0);draw();
-}
-function lon2x(lon){return(lon-M.cx)*(256*Math.pow(2,M.zoom))/360+(canvas.width/DPR)/2;}
-function lat2y(lat){
-var H=canvas.height/DPR;
-function y(la){var s=Math.sin(la*Math.PI/180);return(0.5-Math.log((1+s)/(1-s))/(4*Math.PI))*256*Math.pow(2,M.zoom);}
-return y(lat)-y(M.cy)+H/2;
-}
-function draw(){
-var W=canvas.width/DPR,H=canvas.height/DPR;
-ctx.fillStyle=’#1a1f1a’;ctx.fillRect(0,0,W,H);
-var z=Math.round(M.zoom),ts=256*Math.pow(2,M.zoom-z),tc=Math.pow(2,z);
-var cx_t=(M.cx+180)/360*tc,sl=Math.sin(M.cy*Math.PI/180);
-var cy_t=(1-Math.log((1+sl)/(1-sl))/(2*Math.PI))/2*tc;
-var x0=W/2-cx_t*ts,y0=H/2-cy_t*ts;
-for(var tx=Math.floor(-x0/ts)-1;tx<=Math.ceil((W-x0)/ts)+1;tx++){
-for(var ty=Math.floor(-y0/ts)-1;ty<=Math.ceil((H-y0)/ts)+1;ty++){
-if(ty<0||ty>=tc)continue;
-var wtx=((tx%tc)+tc)%tc,key=z+’/’+wtx+’/’+ty,px=x0+tx*ts,py=y0+ty*ts;
-if(M.tiles[key]&&M.tiles[key].complete&&M.tiles[key].naturalWidth){
-ctx.drawImage(M.tiles[key],px,py,ts,ts);
-}else if(!M.tiles[key]){
-var img=new Image();img.crossOrigin=‘anonymous’;
-img.src=‘https://’+[‘a’,‘b’,‘c’][Math.abs(tx+ty)%3]+’.tile.openstreetmap.org/’+key+’.png’;
-img.onload=function(){draw();};M.tiles[key]=img;
-}
-}
-}
-ctx.fillStyle=‘rgba(8,12,8,0.42)’;ctx.fillRect(0,0,W,H);
-
-// searched location pin (green)
-if(selLat!==null&&selId===null){
-var px=lon2x(selLng),py=lat2y(selLat);
-var g=ctx.createRadialGradient(px,py,0,px,py,22);
-g.addColorStop(0,‘rgba(184,255,87,0.35)’);g.addColorStop(1,‘rgba(0,0,0,0)’);
-ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,22,0,Math.PI*2);ctx.fill();
-ctx.beginPath();ctx.arc(px,py,10,0,Math.PI*2);
-ctx.fillStyle=’#b8ff57’;ctx.fill();
-ctx.strokeStyle=’#fff’;ctx.lineWidth=2.5;ctx.stroke();
+function makeIcon(cls) {
+  return L.divIcon({ className:'', html:'<div class="'+cls+'"></div>', iconSize:[18,18], iconAnchor:[9,9] });
 }
 
-// demo pins (blue)
-DEMOS.forEach(function(d){
-var px=lon2x(d.lng),py=lat2y(d.lat);
-if(px<-20||px>W+20||py<-20||py>H+20)return;
-var active=d.id===selId,col=active?’#b8ff57’:’#57c4ff’;
-var g=ctx.createRadialGradient(px,py,0,px,py,active?20:14);
-g.addColorStop(0,active?‘rgba(184,255,87,0.28)’:‘rgba(87,196,255,0.2)’);
-g.addColorStop(1,‘rgba(0,0,0,0)’);
-ctx.fillStyle=g;ctx.beginPath();ctx.arc(px,py,active?20:14,0,Math.PI*2);ctx.fill();
-ctx.beginPath();ctx.arc(px,py,active?9:7,0,Math.PI*2);
-ctx.fillStyle=col;ctx.fill();
-ctx.strokeStyle=active?’#fff’:’#0e100d’;ctx.lineWidth=2;ctx.stroke();
-ctx.font=‘500 11px DM Sans,sans-serif’;
-var lw=ctx.measureText(d.label).width+14;
-ctx.fillStyle=‘rgba(14,16,13,0.85)’;ctx.fillRect(px-lw/2,py-33,lw,17);
-ctx.fillStyle=active?’#b8ff57’:’#e6e9e4’;
-ctx.textAlign=‘center’;ctx.textBaseline=‘middle’;
-ctx.fillText(d.label,px,py-25);
+var demoMarkers = {};
+var searchMarker = null;
+var activeId = null;
+
+DEMOS.forEach(function(d) {
+  var m = L.marker([d.lat, d.lng], { icon: makeIcon('pin-demo') }).addTo(map);
+  m.on('click', function() { loadDemo(d); });
+  demoMarkers[d.id] = m;
 });
+
+// ── CORS PROXY ────────────────────────────────────────────────────────────────
+// corsproxy.io: free, reliable, no signup
+function proxyFetch(url) {
+  var proxied = 'https://corsproxy.io/?' + encodeURIComponent(url);
+  return fetch(proxied)
+    .then(function(r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    })
+    .catch(function(e) {
+      // fallback to allorigins
+      console.warn('corsproxy failed, trying allorigins:', e.message);
+      return fetch('https://api.allorigins.win/get?url=' + encodeURIComponent(url))
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          if (d && d.contents) return JSON.parse(d.contents);
+          throw new Error('allorigins failed');
+        });
+    });
 }
 
-function getXY(e){var r=canvas.getBoundingClientRect(),s=e.touches?e.touches[0]:(e.changedTouches?e.changedTouches[0]:e);return{x:s.clientX-r.left,y:s.clientY-r.top};}
-canvas.addEventListener(‘mousedown’,function(e){var p=getXY(e);M.dragging=true;M.lx=p.x;M.ly=p.y;M.moved=false;canvas.classList.add(‘dragging’);});
-canvas.addEventListener(‘touchstart’,function(e){var p=getXY(e);M.dragging=true;M.lx=p.x;M.ly=p.y;M.moved=false;},{passive:true});
-window.addEventListener(‘mousemove’,function(e){if(!M.dragging)return;var p=getXY(e),dx=p.x-M.lx,dy=p.y-M.ly;if(Math.abs(dx)+Math.abs(dy)>3)M.moved=true;pan(dx,dy);M.lx=p.x;M.ly=p.y;});
-canvas.addEventListener(‘touchmove’,function(e){e.preventDefault();var p=getXY(e),dx=p.x-M.lx,dy=p.y-M.ly;if(Math.abs(dx)+Math.abs(dy)>3)M.moved=true;pan(dx,dy);M.lx=p.x;M.ly=p.y;},{passive:false});
-window.addEventListener(‘mouseup’,function(){M.dragging=false;canvas.classList.remove(‘dragging’);});
-canvas.addEventListener(‘touchend’,function(e){M.dragging=false;if(!M.moved){var p=getXY(e);tryPin(p.x,p.y);}});
-canvas.addEventListener(‘click’,function(e){if(!M.moved)tryPin(getXY(e).x,getXY(e).y);M.moved=false;});
-canvas.addEventListener(‘wheel’,function(e){e.preventDefault();M.zoom=Math.max(10,Math.min(18,M.zoom+(e.deltaY>0?-0.5:0.5)));draw();},{passive:false});
-var _pd=0;
-canvas.addEventListener(‘touchstart’,function(e){if(e.touches.length===2)_pd=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);},{passive:true});
-canvas.addEventListener(‘touchmove’,function(e){if(e.touches.length===2){var d=Math.hypot(e.touches[0].clientX-e.touches[1].clientX,e.touches[0].clientY-e.touches[1].clientY);M.zoom=Math.max(10,Math.min(18,M.zoom+(d-_pd)*0.01));_pd=d;draw();}},{passive:false});
-
-function pan(dx,dy){
-var dpp=360/(256*Math.pow(2,M.zoom));
-M.cx-=dx*dpp;
-var sl=Math.sin(M.cy*Math.PI/180),wy=(0.5-Math.log((1+sl)/(1-sl))/(4*Math.PI))*256*Math.pow(2,M.zoom);
-wy-=dy*dpp*(256*Math.pow(2,M.zoom)/360);
-M.cy=Math.max(-85,Math.min(85,(2*Math.atan(Math.exp((0.5-wy/(256*Math.pow(2,M.zoom)))*2*Math.PI))-Math.PI/2)*180/Math.PI));
-draw();
-}
-function tryPin(x,y){
-for(var i=0;i<DEMOS.length;i++){var d=DEMOS[i];if(Math.hypot(x-lon2x(d.lng),y-lat2y(d.lat))<20){loadDemo(d);return;}}
-}
-window.addEventListener(‘resize’,resize);
-resize();
-
-// PANEL
-var panel=document.getElementById(‘panel’),panOpen=false;
-document.getElementById(‘phandle’).onclick=function(){panOpen=!panOpen;panel.className=’panel ’+(panOpen?‘open’:‘peek’);};
-function openPanel(){panOpen=true;panel.className=‘panel open’;}
-function peekPanel(){panOpen=false;panel.className=‘panel peek’;}
-function setHandle(title,addr,score,col){
-document.getElementById(‘ptitle’).textContent=title;
-document.getElementById(‘paddress’).textContent=addr;
-document.getElementById(‘pscore’).textContent=score;
-document.getElementById(‘pscore’).style.color=col||‘var(–mut)’;
+// ── RULES ENGINE ──────────────────────────────────────────────────────────────
+function rules(p) {
+  var lot=p.lot||0, z=(p.zone||'').toUpperCase(), u=p.units||1;
+  var sfr=/^R-1|^RE|^RN/.test(z)||z==='R-1'||z==='R-1B'||z==='R-1A';
+  var mf=/^R-2|^R-3|^R-4|^RM|^RDA/.test(z);
+  var res=sfr||mf||/^R-/.test(z);
+  var sb9=sfr&&lot>=2400&&u<=1, adu=res&&lot>=1200, jadu=sfr&&adu;
+  var db=mf||(res&&lot>=6000), mfr=mf, mm=/^R-2|^RMX/.test(z)&&lot>=4000;
+  var max=u;
+  if(sb9) max=Math.max(max,4);
+  if(adu) max=Math.max(max,u+(jadu?2:1));
+  if(mf&&lot>0) max=Math.max(max,Math.floor(lot/600));
+  var sc=15;
+  if(sb9)sc+=28; if(adu)sc+=18; if(db)sc+=14; if(mfr)sc+=20;
+  if(lot>7500)sc+=8; if(lot>15000)sc+=8; sc=Math.min(sc,97);
+  return{sc:sc,sb9:sb9,adu:adu,jadu:jadu,db:db,mfr:mfr,mm:mm,max:max,
+    bld:Math.round(lot*(mf?1.5:sfr?.45:.8)),sfr:sfr,mf:mf,res:res};
 }
 
-// RULES ENGINE
-function rules(p){
-var lot=p.lot||0,z=(p.zone||’’).toUpperCase(),u=p.units||1;
-var sfr=/^R-1|^RE|^RN/.test(z)||z===‘R-1’||z===‘R-1B’||z===‘R-1A’;
-var mf=/^R-2|^R-3|^R-4|^RM|^RDA/.test(z);
-var res=sfr||mf||/^R-/.test(z);
-var sb9=sfr&&lot>=2400&&u<=1,adu=res&&lot>=1200,jadu=sfr&&adu;
-var db=mf||(res&&lot>=6000),mfr=mf,mm=/^R-2|^RMX/.test(z)&&lot>=4000;
-var max=u;
-if(sb9)max=Math.max(max,4);
-if(adu)max=Math.max(max,u+(jadu?2:1));
-if(mf&&lot>0)max=Math.max(max,Math.floor(lot/600));
-var sc=15;
-if(sb9)sc+=28;if(adu)sc+=18;if(db)sc+=14;if(mfr)sc+=20;
-if(lot>7500)sc+=8;if(lot>15000)sc+=8;sc=Math.min(sc,97);
-return{sc:sc,sb9:sb9,adu:adu,jadu:jadu,db:db,mfr:mfr,mm:mm,max:max,
-bld:Math.round(lot*(mf?1.5:sfr?.45:.8)),sfr:sfr,mf:mf,res:res};
-}
-
-// LOAD DEMO PIN
-function loadDemo(d){
-selId=d.id;selLat=d.lat;selLng=d.lng;
-M.cx=d.lng;M.cy=d.lat;M.zoom=16;draw();
-showSpin(‘Loading…’);peekPanel();
-setTimeout(function(){render(d,rules(d),‘demo’);openPanel();},500);
-}
-
-// SEARCH
-document.getElementById(‘gobtn’).onclick=doSearch;
-document.getElementById(‘si’).onkeydown=function(e){if(e.key===‘Enter’)doSearch();};
-
-function doSearch(){
-var q=document.getElementById(‘si’).value.trim();
-if(!q)return;
-// Demo pin match first
-var ql=q.toLowerCase();
-for(var i=0;i<DEMOS.length;i++){
-var d=DEMOS[i],street=d.address.split(’,’)[0].toLowerCase().replace(/^\d+\s*/,’’);
-var words=street.split(’ ‘);
-if(words.some(function(w){return w.length>3&&ql.includes(w);})){loadDemo(d);return;}
-}
-showSpin(‘Geocoding…’);peekPanel();
-// Step 1: geocode with nominatim via proxy
-var geoUrl=‘https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q=’+
-encodeURIComponent(/sacramento|,\s*ca/i.test(q)?q:q+’, Sacramento CA’);
-proxyFetch(geoUrl)
-.then(function(geo){
-if(!geo||!geo.length)throw new Error(‘Address not found’);
-var lat=parseFloat(geo[0].lat),lon=parseFloat(geo[0].lon);
-// Build address from nominatim result
-var a=geo[0].address||{};
-var addr=(a.house_number?a.house_number+’ ‘:’’)+
-(a.road||a.pedestrian||’’)+
-(a.city||a.town||a.suburb?’, ‘+(a.city||a.town||a.suburb):’’);
-if(!addr.trim())addr=geo[0].display_name.split(’,’).slice(0,2).join(’,’).trim();
-// Place pin
-selId=null;selLat=lat;selLng=lon;
-M.cx=lon;M.cy=lat;M.zoom=17;draw();
-showSpin(‘Fetching Sacramento County parcel data…’);
-// Step 2: fetch real parcel data
-return fetchParcel(lat,lon,addr);
-})
-.then(function(result){
-render(result.p,rules(result.p),result.src);
-openPanel();
-})
-.catch(function(err){
-console.error(err);
-showError(‘Address not found. Try “3510 Broadmoor Way” or tap a demo pin.’);
-peekPanel();
-});
-}
-
-// PROXY FETCH — tries each public CORS proxy in order
-function proxyFetch(url,proxyIdx){
-proxyIdx=proxyIdx||0;
-if(proxyIdx>=PROXIES.length)return Promise.reject(new Error(‘All proxies failed’));
-var proxyUrl=PROXIES[proxyIdx](url);
-return fetch(proxyUrl,{signal:AbortSignal.timeout(10000)})
-.then(function(r){
-if(!r.ok)throw new Error(‘HTTP ‘+r.status);
-return r.json();
-})
-.then(function(data){
-// allorigins wraps response in {contents:”…”}
-if(data&&typeof data.contents===‘string’){
-try{return JSON.parse(data.contents);}catch(e){throw new Error(‘Bad JSON from proxy’);}
-}
-return data;
-})
-.catch(function(e){
-console.warn(‘Proxy ‘+proxyIdx+’ failed:’,e.message,’. Trying next…’);
-return proxyFetch(url,proxyIdx+1);
-});
-}
-
-// FETCH REAL PARCEL DATA
-var PARCELS  =‘https://mapservices.gis.saccounty.net/arcgis/rest/services/PARCELS/MapServer/0/query’;
-var ASSESSOR =‘https://mapservices.gis.saccounty.net/arcgis/rest/services/ASSESSOR/MapServer/0/query’;
-var ZONING   =‘https://mapservices.gis.saccounty.net/arcgis/rest/services/CITY_of_SACRAMENTO/MapServer/3/query’;
-
-function fetchParcel(lat,lon,addr){
-var geo=lon+’,’+lat;
-var qs=‘geometry=’+geo+’&geometryType=esriGeometryPoint&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&f=json’;
-var p1=proxyFetch(PARCELS+’?’+qs).catch(function(e){console.warn(‘parcels:’,e.message);return null;});
-var p2=proxyFetch(ASSESSOR+’?’+qs).catch(function(e){console.warn(‘assessor:’,e.message);return null;});
-var p3=proxyFetch(ZONING+’?’+qs).catch(function(e){console.warn(‘zoning:’,e.message);return null;});
-return Promise.all([p1,p2,p3]).then(function(res){
-var PA=res[0]&&res[0].features&&res[0].features[0]?res[0].features[0].attributes:{};
-var AS=res[1]&&res[1].features&&res[1].features[0]?res[1].features[0].attributes:{};
-var ZO=res[2]&&res[2].features&&res[2].features[0]?res[2].features[0].attributes:{};
-// Log raw field names so we can see what the API actually returns
-console.log(‘PARCEL fields:’,Object.keys(PA));
-console.log(‘ASSESSOR fields:’,Object.keys(AS));
-console.log(‘ZONING fields:’,Object.keys(ZO));
-// Field mapping — covers known Sacramento County field name variants
-var apn =PA.APN||PA.APN_FORMATTED||AS.APN||AS.PARCELNO||’—’;
-var lot =num(PA.LOT_SIZE_SF||PA.LOTSIZE_SF||PA.LOT_AREA||PA.SHAPE_Area||
-AS.LOT_SQ_FEET||AS.LOTSIZE||AS.LAND_AREA||AS.PARCEL_SIZE_SF);
-var zone=ZO.ZONE||ZO.BASE_ZONE||ZO.ZONING||ZO.ZONE_CODE||
-PA.ZONING||PA.ZONE||AS.ZONING||AS.ZONE||’—’;
-var lv  =num(AS.LAND_VALUE||AS.NET_LAND_VALUE||AS.ASR_LAND||AS.LAND_VAL);
-var iv  =num(AS.IMPROVEMENT_VALUE||AS.NET_IMPROVEMENT_VALUE||AS.ASR_IMPR||AS.IMP_VAL);
-var yr  =int(AS.YEAR_BUILT||AS.YR_BLT||PA.YEAR_BUILT);
-var la  =num(AS.LIVING_AREA||AS.TOTAL_LIVING_AREA||AS.BLDG_SQFT||AS.LIVING_SQ_FT);
-var units=int(AS.UNITS||AS.NO_UNITS||PA.UNITS)||1;
-var gotData=apn!==’—’||lot>0||zone!==’—’;
-return{
-p:{address:addr,apn:apn,zone:zone,lot:lot,units:units,yr:yr,lv:lv,iv:iv,la:la},
-src:gotData?‘live’:‘no-data’
+// ── PANEL ─────────────────────────────────────────────────────────────────────
+var panel=document.getElementById('panel'), panOpen=false;
+document.getElementById('phandle').onclick=function(){
+  panOpen=!panOpen; panel.className='panel '+(panOpen?'open':'peek');
 };
-});
+function openPanel(){panOpen=true;panel.className='panel open';}
+function peekPanel(){panOpen=false;panel.className='panel peek';}
+function setHandle(title,addr,score,col){
+  document.getElementById('ptitle').textContent=title;
+  document.getElementById('paddress').textContent=addr;
+  document.getElementById('pscore').textContent=score;
+  document.getElementById('pscore').style.color=col||'var(--mut)';
+}
+
+// ── LOAD DEMO ─────────────────────────────────────────────────────────────────
+function loadDemo(d) {
+  // update pin styles
+  if(activeId && demoMarkers[activeId]) demoMarkers[activeId].setIcon(makeIcon('pin-demo'));
+  activeId = d.id;
+  demoMarkers[d.id].setIcon(makeIcon('pin-demo active'));
+  if(searchMarker){ map.removeLayer(searchMarker); searchMarker=null; }
+  map.flyTo([d.lat, d.lng], 17, {duration:0.8});
+  showSpin('Loading…'); peekPanel();
+  setTimeout(function(){ render(d, rules(d), 'demo'); openPanel(); }, 500);
+}
+
+// ── SEARCH ────────────────────────────────────────────────────────────────────
+document.getElementById('gobtn').onclick = doSearch;
+document.getElementById('si').onkeydown = function(e){ if(e.key==='Enter') doSearch(); };
+
+function doSearch() {
+  var q = document.getElementById('si').value.trim();
+  if(!q) return;
+  // match demo pins first
+  var ql = q.toLowerCase();
+  for(var i=0;i<DEMOS.length;i++){
+    var d=DEMOS[i], street=d.address.split(',')[0].toLowerCase().replace(/^\d+\s*/,'');
+    if(street.split(' ').some(function(w){return w.length>3&&ql.includes(w);})){
+      loadDemo(d); return;
+    }
+  }
+  showSpin('Finding address…'); peekPanel();
+  var geoUrl = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&addressdetails=1&q='
+    + encodeURIComponent(/sacramento|,\s*ca/i.test(q) ? q : q+', Sacramento CA');
+  proxyFetch(geoUrl)
+    .then(function(geo){
+      if(!geo||!geo.length) throw new Error('not found');
+      var lat=parseFloat(geo[0].lat), lon=parseFloat(geo[0].lon);
+      var a=geo[0].address||{};
+      var addr=(a.house_number?a.house_number+' ':'')+(a.road||a.pedestrian||'')
+               +(a.city||a.suburb?', '+(a.city||a.suburb):'');
+      if(!addr.trim()) addr=geo[0].display_name.split(',').slice(0,2).join(',').trim();
+      // place pin
+      if(activeId && demoMarkers[activeId]) demoMarkers[activeId].setIcon(makeIcon('pin-demo'));
+      activeId=null;
+      if(searchMarker) map.removeLayer(searchMarker);
+      searchMarker = L.marker([lat,lon],{icon:makeIcon('pin-search')}).addTo(map);
+      map.flyTo([lat,lon], 17, {duration:0.8});
+      showSpin('Fetching Sacramento County data…');
+      return fetchParcel(lat, lon, addr);
+    })
+    .then(function(result){
+      render(result.p, rules(result.p), result.src);
+      openPanel();
+    })
+    .catch(function(err){
+      console.error(err);
+      showError('Address not found. Try "3510 Broadmoor Way" or tap a demo pin.');
+      peekPanel();
+    });
+}
+
+// ── FETCH PARCEL DATA ─────────────────────────────────────────────────────────
+var PARCELS  = 'https://mapservices.gis.saccounty.net/arcgis/rest/services/PARCELS/MapServer/0/query';
+var ASSESSOR = 'https://mapservices.gis.saccounty.net/arcgis/rest/services/ASSESSOR/MapServer/0/query';
+var ZONING   = 'https://mapservices.gis.saccounty.net/arcgis/rest/services/CITY_of_SACRAMENTO/MapServer/3/query';
+
+function fetchParcel(lat, lon, addr) {
+  var qs = 'geometry='+lon+','+lat+'&geometryType=esriGeometryPoint&inSR=4326&outSR=4326'
+         + '&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&f=json';
+  var p1 = proxyFetch(PARCELS+'?'+qs).catch(function(e){console.warn('parcels:',e.message);return null;});
+  var p2 = proxyFetch(ASSESSOR+'?'+qs).catch(function(e){console.warn('assessor:',e.message);return null;});
+  var p3 = proxyFetch(ZONING+'?'+qs).catch(function(e){console.warn('zoning:',e.message);return null;});
+  return Promise.all([p1,p2,p3]).then(function(res){
+    var PA=res[0]&&res[0].features&&res[0].features[0]?res[0].features[0].attributes:{};
+    var AS=res[1]&&res[1].features&&res[1].features[0]?res[1].features[0].attributes:{};
+    var ZO=res[2]&&res[2].features&&res[2].features[0]?res[2].features[0].attributes:{};
+    console.log('PARCEL:',PA); console.log('ASSESSOR:',AS); console.log('ZONING:',ZO);
+    var apn  = PA.APN||PA.APN_FORMATTED||AS.APN||AS.PARCELNO||'—';
+    var lot  = num(PA.LOT_SIZE_SF||PA.LOTSIZE_SF||PA.LOT_AREA||AS.LOT_SQ_FEET||AS.LOTSIZE||AS.LAND_AREA);
+    var zone = ZO.ZONE||ZO.BASE_ZONE||ZO.ZONING||PA.ZONING||PA.ZONE||AS.ZONING||AS.ZONE||'—';
+    var lv   = num(AS.LAND_VALUE||AS.NET_LAND_VALUE||AS.ASR_LAND||AS.LAND_VAL);
+    var iv   = num(AS.IMPROVEMENT_VALUE||AS.NET_IMPROVEMENT_VALUE||AS.ASR_IMPR||AS.IMP_VAL);
+    var yr   = parseInt(AS.YEAR_BUILT||AS.YR_BLT||PA.YEAR_BUILT)||0;
+    var la   = num(AS.LIVING_AREA||AS.TOTAL_LIVING_AREA||AS.BLDG_SQFT||AS.LIVING_SQ_FT);
+    var units= parseInt(AS.UNITS||AS.NO_UNITS||PA.UNITS)||1;
+    var gotData = apn!=='—'||lot>0||zone!=='—';
+    return { p:{address:addr,apn:apn,zone:zone,lot:lot,units:units,yr:yr,lv:lv,iv:iv,la:la}, src:gotData?'live':'no-data' };
+  });
 }
 function num(v){return parseFloat(v)||0;}
-function int(v){return parseInt(v)||0;}
 
-// UI
+// ── UI HELPERS ────────────────────────────────────────────────────────────────
 function showSpin(msg){
-document.getElementById(‘pbody’).innerHTML=’<div class="spin-wrap"><div class="spin"></div><div class="spin-lbl">’+msg+’</div></div>’;
-setHandle(‘Analyzing…’,msg,’—’,null);
+  document.getElementById('pbody').innerHTML='<div class="spin-wrap"><div class="spin"></div><div class="spin-lbl">'+msg+'</div></div>';
+  setHandle('Analyzing…',msg,'—',null);
 }
 function showError(msg){
-document.getElementById(‘pbody’).innerHTML=’<div class="empty"><div class="empty-ico" style="color:var(--red)">⚠</div><div class="empty-lbl" style="color:var(--red)">Not Found</div><div class="empty-txt">’+msg+’</div></div>’;
-setHandle(‘Not found’,‘Try a different address’,’—’,null);
+  document.getElementById('pbody').innerHTML='<div class="empty"><div class="empty-ico" style="color:var(--red)">⚠</div><div class="empty-lbl" style="color:var(--red)">Not Found</div><div class="empty-txt">'+msg+'</div></div>';
+  setHandle('Not found','Try a different address','—',null);
 }
-
 function tog(id){
-var b=document.getElementById(‘b’+id),c=document.getElementById(‘c’+id);
-var o=b.style.display===‘none’;b.style.display=o?‘block’:‘none’;c.classList.toggle(‘open’,o);
+  var b=document.getElementById('b'+id),c=document.getElementById('c'+id);
+  var o=b.style.display==='none';b.style.display=o?'block':'none';c.classList.toggle('open',o);
 }
 function sec(title,body,id){
-return’<div class="sec"><div class="shead" onclick="tog(\''+id+'\')">’+
-‘<span class="sname">’+title+’</span><span class="schev open" id="c'+id+'">▾</span></div>’+
-‘<div class="sbody" id="b'+id+'">’+body+’</div></div>’;
+  return'<div class="sec"><div class="shead" onclick="tog(\''+id+'\')">'+
+    '<span class="sname">'+title+'</span><span class="schev open" id="c'+id+'">▾</span></div>'+
+    '<div class="sbody" id="b'+id+'">'+body+'</div></div>';
 }
-function dr(l,v,hi){return’<div class="dr"><span class="dl">’+l+’</span><span class="dv'+(hi?' hi':'')+'">’+v+’</span></div>’;}
-function ei(dot,t,d){return’<div class="elig"><div class="edot '+dot+'"></div><div><div class="etitle">’+t+’</div><div class="edesc">’+d+’</div></div></div>’;}
+function dr(l,v,hi){return'<div class="dr"><span class="dl">'+l+'</span><span class="dv'+(hi?' hi':'')+'">'+v+'</span></div>';}
+function ei(dot,t,d){return'<div class="elig"><div class="edot '+dot+'"></div><div><div class="etitle">'+t+'</div><div class="edesc">'+d+'</div></div></div>';}
 
+// ── RENDER ────────────────────────────────────────────────────────────────────
 function render(p,a,src){
-var col=a.sc>=70?’#b8ff57’:a.sc>=45?’#ffb347’:’#ff5f5f’;
-var verd=a.sc>=75?‘Strong Potential’:a.sc>=55?‘Moderate Potential’:a.sc>=35?‘Limited Potential’:‘Low Potential’;
-setHandle(‘Parcel Analysis’,p.address,a.sc,col);
-var C=2*Math.PI*27,dash=(a.sc/100)*C;
-var tags=’’;
-if(a.sb9)tags+=’<span class="tag tg">SB 9 Eligible</span>’;
-if(a.adu)tags+=’<span class="tag tg">ADU</span>’;
-if(a.jadu)tags+=’<span class="tag tg">Jr ADU</span>’;
-if(a.db)tags+=’<span class="tag tb">Density Bonus</span>’;
-if(a.mfr)tags+=’<span class="tag tb">MF By-Right</span>’;
-if(a.mm)tags+=’<span class="tag tw">Missing Middle</span>’;
-if(!a.res)tags+=’<span class="tag tm">Non-Residential</span>’;
-if(!tags)tags=’<span class="tag tm">Review Required</span>’;
-var elig=
-ei(a.sb9?‘dg’:‘dm’,‘SB 9 — ‘+(a.sb9?‘Eligible’:‘Not Eligible’),a.sb9?‘Lot split + duplex by right. Up to 4 units, no discretionary approval.’:‘Requires SFR zone, ≥2,400 sqft lot, ≤1 existing unit.’)+
-ei(a.adu?‘dg’:‘dm’,‘ADU — ‘+(a.adu?‘Eligible’:‘Not Eligible’),a.adu?‘Detached or attached ADU permitted.’+(a.jadu?’ Junior ADU also allowed.’:’’):‘Min 1,200 sqft lot required.’)+
-ei(a.db?‘dg’:‘dm’,‘Density Bonus — ‘+(a.db?‘Applicable’:‘Review Required’),a.db?‘Up to 50% density increase with affordable unit inclusion (CA Gov Code 65915).’:‘Base zone may not support density bonus.’)+
-ei(a.mfr?‘dg’:a.mm?‘dw’:‘dm’,‘Multifamily By-Right — ‘+(a.mfr?‘Yes’:‘No’),a.mfr?‘Multifamily permitted as of right.’:a.mm?‘Missing-middle types may be allowed — verify with zoning code.’:‘Requires entitlement or rezoning.’);
-var lot=p.lot>0?p.lot.toLocaleString()+’ sqft’:’—’;
-var bld=a.bld>0?’~’+a.bld.toLocaleString()+’ sqft’:’—’;
-var lv=p.lv>0?’$’+p.lv.toLocaleString():’—’;
-var tv=(p.lv+p.iv)>0?’$’+(p.lv+p.iv).toLocaleString():’—’;
-var la=p.la>0?p.la.toLocaleString()+’ sqft’:’—’;
-var civic=a.sb9?‘This lot may qualify for an SB 9 lot split — up to 4 units where 1 exists today, no discretionary approval required.’:
-a.adu?‘This lot may be eligible for an ADU or Junior ADU — a path to rental income without full redevelopment.’:
-‘Limited by-right options. An architect or planner can assess entitlement pathways.’;
-var sourceHtml=src===‘demo’
-?’<div class="src-live">✓ DEMO DATA  ·  Hardcoded real Sacramento parcel</div>’
-:src===‘live’
-?’<div class="src-live">✓ LIVE DATA  ·  Sacramento County Assessor + GIS + Zoning</div>’
-:’<div class="src-est">⚠ PARCEL API NOT REACHED  ·  Zoning analysis based on geocode only.<br>Check your internet connection or try again.</div>’;
-document.getElementById(‘pbody’).innerHTML=
-‘<div class="sblk">’+
-‘<div class="sring"><svg viewBox="0 0 68 68">’+
-‘<circle cx="34" cy="34" r="27" fill="none" stroke="var(--bdr)" stroke-width="5"/>’+
-‘<circle cx="34" cy="34" r="27" fill="none" stroke="'+col+'" stroke-width="5" stroke-linecap="butt" stroke-dasharray="'+dash+' '+C+'"/>’+
-‘</svg><div class="snum" style="color:'+col+'">’+a.sc+’</div></div>’+
-‘<div><div class="smeta">Development Score</div>’+
-‘<div class="sverdict" style="color:'+col+'">’+verd+’</div>’+
-‘<div class="ssub">’+p.zone+’ · APN: ‘+p.apn+’</div></div>’+
-‘</div>’+
-sec(‘Opportunities’,’<div class="tags">’+tags+’</div>’+elig,‘opp’)+
-sec(‘Physical & Zoning’,dr(‘Zoning’,p.zone||’—’,true)+dr(‘Lot Size’,lot)+dr(‘Existing Units’,p.units||’—’)+dr(‘Year Built’,p.yr||’—’)+dr(‘Living Area’,la),‘phys’)+
-sec(‘Financial Signals’,dr(‘Est. Max Units’,a.max>1?‘Up to ‘+a.max:‘1 unit’,true)+dr(‘Est. Buildable Area’,bld)+dr(‘Assessed Land’,lv)+dr(‘Total Assessed’,tv),‘fin’)+
-‘<div class="civic"><div class="clbl">Homeowner Note</div><div class="ctxt">’+civic+’</div></div>’+
-sourceHtml+
-‘<div class="fnote">Screening only — verify with local jurisdiction before acting on this analysis.</div>’;
+  var col=a.sc>=70?'#b8ff57':a.sc>=45?'#ffb347':'#ff5f5f';
+  var verd=a.sc>=75?'Strong Potential':a.sc>=55?'Moderate Potential':a.sc>=35?'Limited Potential':'Low Potential';
+  setHandle('Parcel Analysis',p.address,a.sc,col);
+  var C=2*Math.PI*27, dash=(a.sc/100)*C;
+  var tags='';
+  if(a.sb9) tags+='<span class="tag tg">SB 9 Eligible</span>';
+  if(a.adu) tags+='<span class="tag tg">ADU</span>';
+  if(a.jadu)tags+='<span class="tag tg">Jr ADU</span>';
+  if(a.db)  tags+='<span class="tag tb">Density Bonus</span>';
+  if(a.mfr) tags+='<span class="tag tb">MF By-Right</span>';
+  if(a.mm)  tags+='<span class="tag tw">Missing Middle</span>';
+  if(!a.res)tags+='<span class="tag tm">Non-Residential</span>';
+  if(!tags) tags='<span class="tag tm">Review Required</span>';
+  var elig=
+    ei(a.sb9?'dg':'dm','SB 9 — '+(a.sb9?'Eligible':'Not Eligible'),a.sb9?'Lot split + duplex by right. Up to 4 units, no discretionary approval.':'Requires SFR zone, ≥2,400 sqft lot, ≤1 existing unit.')+
+    ei(a.adu?'dg':'dm','ADU — '+(a.adu?'Eligible':'Not Eligible'),a.adu?'Detached or attached ADU permitted.'+(a.jadu?' Junior ADU also allowed.':''):'Min 1,200 sqft lot required.')+
+    ei(a.db?'dg':'dm','Density Bonus — '+(a.db?'Applicable':'Review Required'),a.db?'Up to 50% density increase with affordable unit inclusion (CA Gov Code 65915).':'Base zone may not support density bonus.')+
+    ei(a.mfr?'dg':a.mm?'dw':'dm','Multifamily By-Right — '+(a.mfr?'Yes':'No'),a.mfr?'Multifamily permitted as of right.':a.mm?'Missing-middle types may be allowed — verify zoning code.':'Requires entitlement or rezoning.');
+  var lot=p.lot>0?p.lot.toLocaleString()+' sqft':'—';
+  var bld=a.bld>0?'~'+a.bld.toLocaleString()+' sqft':'—';
+  var lv=p.lv>0?'$'+p.lv.toLocaleString():'—';
+  var tv=(p.lv+p.iv)>0?'$'+(p.lv+p.iv).toLocaleString():'—';
+  var la=p.la>0?p.la.toLocaleString()+' sqft':'—';
+  var civic=a.sb9?'This lot may qualify for an SB 9 lot split — up to 4 units where 1 exists today, no discretionary approval required.':
+            a.adu?'This lot may be eligible for an ADU or Junior ADU — a path to rental income without full redevelopment.':
+                  'Limited by-right options. An architect or planner can assess entitlement pathways.';
+  var srcHtml = src==='demo'
+    ?'<div class="src-live">✓ DEMO DATA · Hardcoded real Sacramento parcel</div>'
+    :src==='live'
+    ?'<div class="src-live">✓ LIVE DATA · Sacramento County Assessor + GIS + Zoning</div>'
+    :'<div class="src-est">⚠ PARCEL API NOT REACHED · Check connection and try again</div>';
+  document.getElementById('pbody').innerHTML=
+    '<div class="sblk">'+
+      '<div class="sring"><svg viewBox="0 0 68 68">'+
+        '<circle cx="34" cy="34" r="27" fill="none" stroke="var(--bdr)" stroke-width="5"/>'+
+        '<circle cx="34" cy="34" r="27" fill="none" stroke="'+col+'" stroke-width="5" stroke-linecap="butt" stroke-dasharray="'+dash+' '+C+'"/>'+
+      '</svg><div class="snum" style="color:'+col+'">'+a.sc+'</div></div>'+
+      '<div><div class="smeta">Development Score</div>'+
+      '<div class="sverdict" style="color:'+col+'">'+verd+'</div>'+
+      '<div class="ssub">'+p.zone+' · APN: '+p.apn+'</div></div>'+
+    '</div>'+
+    sec('Opportunities','<div class="tags">'+tags+'</div>'+elig,'opp')+
+    sec('Physical & Zoning',dr('Zoning',p.zone||'—',true)+dr('Lot Size',lot)+dr('Existing Units',p.units||'—')+dr('Year Built',p.yr||'—')+dr('Living Area',la),'phys')+
+    sec('Financial Signals',dr('Est. Max Units',a.max>1?'Up to '+a.max:'1 unit',true)+dr('Est. Buildable',bld)+dr('Assessed Land',lv)+dr('Total Assessed',tv),'fin')+
+    '<div class="civic"><div class="clbl">Homeowner Note</div><div class="ctxt">'+civic+'</div></div>'+
+    srcHtml+
+    '<div class="fnote">Screening only — verify with local jurisdiction before acting on this analysis.</div>';
 }
 </script>
 
