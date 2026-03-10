@@ -492,15 +492,54 @@ var PA_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/PARCELS/M
 var SA_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/ASSESSOR/MapServer/1/query';
 var ZO_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/CITY_of_SACRAMENTO/MapServer/3/query';
 
+// Point-in-polygon test for a simple ArcGIS polygon ring
+function ptInRing(lng,lat,ring){
+  var inside=false;
+  for(var i=0,j=ring.length-1;i<ring.length;j=i++){
+    var xi=ring[i][0],yi=ring[i][1],xj=ring[j][0],yj=ring[j][1];
+    if(((yi>lat)!=(yj>lat))&&(lng<(xj-xi)*(lat-yi)/(yj-yi)+xi))inside=!inside;
+  }
+  return inside;
+}
+
+// Pick the feature whose geometry actually contains (lat,lng); fall back to closest centroid
+function bestFeature(features,lng,lat){
+  if(!features||!features.length)return null;
+  // Try point-in-polygon first (requires returnGeometry=true)
+  for(var i=0;i<features.length;i++){
+    var g=features[i].geometry;
+    if(g&&g.rings){
+      for(var r=0;r<g.rings.length;r++){
+        if(ptInRing(lng,lat,g.rings[r]))return features[i].attributes;
+      }
+    }
+  }
+  // Fallback: closest centroid
+  var best=null,bestD=Infinity;
+  for(var i=0;i<features.length;i++){
+    var g=features[i].geometry;
+    var cx=lng,cy=lat;
+    if(g&&g.rings&&g.rings[0]){
+      var ring=g.rings[0],sx=0,sy=0;
+      for(var k=0;k<ring.length;k++){sx+=ring[k][0];sy+=ring[k][1];}
+      cx=sx/ring.length;cy=sy/ring.length;
+    } else if(g&&g.x!=null){cx=g.x;cy=g.y;}
+    var dist=(cx-lng)*(cx-lng)+(cy-lat)*(cy-lat);
+    if(dist<bestD){bestD=dist;best=features[i].attributes;}
+  }
+  return best||features[0].attributes;
+}
+
 function fetchParcel(lat,lng,addr){
-  var d=0.0005; // ~55m buffer, catches most parcels
+  var d=0.0005; // ~55m buffer
   var bbox=(lng-d)+','+(lat-d)+','+(lng+d)+','+(lat+d);
-  var qs='where=1%3D1'  // where=1=1 required by ArcGIS MapServer
+  // returnGeometry=true so we can do point-in-polygon to pick the RIGHT parcel
+  var qs='where=1%3D1'
     +'&geometry='+bbox
     +'&geometryType=esriGeometryEnvelope'
     +'&inSR=4326&outSR=4326'
     +'&spatialRel=esriSpatialRelIntersects'
-    +'&outFields=*&returnGeometry=false&f=json';
+    +'&outFields=*&returnGeometry=true&f=json';
 
   return Promise.all([
     directOrProxy(PA_URL+'?'+qs),
@@ -509,9 +548,10 @@ function fetchParcel(lat,lng,addr){
   ]).then(function(res){
     var Praw=res[0], Sraw=res[1], Zraw=res[2];
     console.log('RAW API results:', {P:Praw, S:Sraw, Z:Zraw});
-    var P=Praw&&Praw.features&&Praw.features[0]?Praw.features[0].attributes:{};
-    var S=Sraw&&Sraw.features&&Sraw.features[0]?Sraw.features[0].attributes:{};
-    var Z=Zraw&&Zraw.features&&Zraw.features[0]?Zraw.features[0].attributes:{};
+    // Use point-in-polygon to pick the parcel that actually contains the click
+    var P=bestFeature(Praw&&Praw.features,lng,lat)||{};
+    var S=bestFeature(Sraw&&Sraw.features,lng,lat)||{};
+    var Z=bestFeature(Zraw&&Zraw.features,lng,lat)||{};
 
     window._dbg={
       P_keys:Object.keys(P).filter(function(k){return P[k]!=null&&P[k]!=='';}),
