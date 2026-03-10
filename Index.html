@@ -321,7 +321,11 @@ function handleMapClick(px,py){
     });
 }
 
-mapDiv.addEventListener('click',function(e){handleMapClick(e.offsetX,e.offsetY);});
+mapDiv.addEventListener('click',function(e){
+  // Always use getBoundingClientRect — offsetX is wrong when child elements intercept
+  var r=mapDiv.getBoundingClientRect();
+  handleMapClick(e.clientX-r.left, e.clientY-r.top);
+});
 mapDiv.addEventListener('touchend',function(e){
   if(!moved&&e.changedTouches.length===1){
     var r=mapDiv.getBoundingClientRect();
@@ -542,19 +546,68 @@ function fetchParcel(lat,lng,addr){
 function fl(v){return parseFloat(v)||0;}
 
 // ── RULES ─────────────────────────────────────────────────────────────────────
+// Policy sources:
+//   SB 9 (2021): lot split + duplex by right in SFR zones statewide
+//   AB 68/ADU law: ADU/JADU by right on residential lots
+//   CA Density Bonus Law (Gov Code 65915): up to 50% bonus with affordable unit
+//   Sacramento Missing Middle Housing Ordinance (adopted Oct 2023, eff. Jan 2024):
+//     Allows duplexes, triplexes, and fourplexes by right in R-1, R-1A, R-1B zones
+//     city-wide. Minimum lot: 3,000 sqft for duplex, 4,500 for triplex, 6,000 for fourplex
+//   Sacramento GP 2040: HDR (High Density Res), MDR (Medium Density), LDR (Low Density),
+//     NDC (Neighborhood Commercial), TC (Transit Corridor), MU (Mixed Use)
 function rules(p){
   var lot=p.lot||0,z=(p.zone||'').toUpperCase(),u=p.units||1;
-  var sfr=/^R-1|^RE|^RN/.test(z)||z==='R-1'||z==='R-1B'||z==='R-1A';
+  var sfr=/^R-1($|[^0-9]|A|B)/.test(z)||/^RE|^RN/.test(z);
   var mf=/^R-2|^R-3|^R-4|^RM|^RDA/.test(z),res=sfr||mf||/^R-/.test(z);
-  var sb9=sfr&&lot>=2400&&u<=1,adu=res&&lot>=1200,jadu=sfr&&adu;
-  var db=mf||(res&&lot>=6000),mfr=mf,mm=/^R-2|^RMX/.test(z)&&lot>=4000;
+  var sb9=sfr&&lot>=2400&&u<=1;
+  var adu=res&&lot>=1200,jadu=sfr&&adu;
+  var db=mf||(res&&lot>=6000);
+  var mfr=mf;
+
+  // Sacramento MMH Ordinance (Jan 2024) — applies to City of Sacramento R-1 zones
+  // Duplex by right: R-1 zone, lot ≥ 3,000 sqft
+  // Triplex by right: R-1 zone, lot ≥ 4,500 sqft
+  // Fourplex by right: R-1 zone, lot ≥ 6,000 sqft
+  var mmhDuplex  = sfr && lot>=3000;
+  var mmhTriplex = sfr && lot>=4500;
+  var mmhFourplex= sfr && lot>=6000;
+  var mm = mmhDuplex; // any MMH eligibility
+
+  // GP 2040 land use designation inference from zone
+  // HDR: R-3, R-4, RDA, RM zones → High Density Res (up to 100+ du/ac)
+  // MDR: R-2 zones → Medium Density Res (up to 30 du/ac)
+  // LDR: R-1 zones → Low Density Res (up to 12 du/ac, but MMH expands this)
+  // TC/MU: mixed zones, SP overlays near transit
+  var gpHDR=/^R-3|^R-4|^RDA|^RM/.test(z);
+  var gpMDR=/^R-2/.test(z);
+  var gpLDR=sfr;
+  var gpMU=/^MU|^TC|MIXED/.test(z);
+  var gpNC=/^C-1|^NC|^NX/.test(z);
+
+  // Max unit calc
   var max=u;
-  if(sb9)max=Math.max(max,4);if(adu)max=Math.max(max,u+(jadu?2:1));
+  if(sb9)max=Math.max(max,4);
+  if(mmhFourplex)max=Math.max(max,4);
+  else if(mmhTriplex)max=Math.max(max,3);
+  else if(mmhDuplex)max=Math.max(max,2);
+  if(adu)max=Math.max(max,u+(jadu?2:1));
   if(mf&&lot>0)max=Math.max(max,Math.floor(lot/600));
-  var sc=15;if(sb9)sc+=28;if(adu)sc+=18;if(db)sc+=14;if(mfr)sc+=20;
-  if(lot>7500)sc+=8;if(lot>15000)sc+=8;sc=Math.min(sc,97);
-  return{sc:sc,sb9:sb9,adu:adu,jadu:jadu,db:db,mfr:mfr,mm:mm,max:max,
-    bld:Math.round(lot*(mf?1.5:sfr?.45:.8)),sfr:sfr,mf:mf,res:res};
+
+  // Score
+  var sc=15;
+  if(sb9)sc+=22;
+  if(mmhFourplex)sc+=20;else if(mmhTriplex)sc+=14;else if(mmhDuplex)sc+=10;
+  if(adu)sc+=18;
+  if(db)sc+=12;
+  if(mfr)sc+=18;
+  if(gpHDR)sc+=8;else if(gpMDR)sc+=5;
+  if(lot>7500)sc+=5;if(lot>15000)sc+=5;
+  sc=Math.min(sc,97);
+
+  return{sc:sc,sb9:sb9,adu:adu,jadu:jadu,db:db,mfr:mfr,
+    mm:mm,mmhDuplex:mmhDuplex,mmhTriplex:mmhTriplex,mmhFourplex:mmhFourplex,
+    gpHDR:gpHDR,gpMDR:gpMDR,gpLDR:gpLDR,gpMU:gpMU,gpNC:gpNC,
+    max:max,bld:Math.round(lot*(mf?1.5:sfr?.55:.8)),sfr:sfr,mf:mf,res:res};
 }
 
 // ── PANEL ─────────────────────────────────────────────────────────────────────
@@ -587,27 +640,70 @@ function render(p,a,src){
   setHdr('Parcel Analysis',p.address,a.sc,col);
   var C=2*Math.PI*27,dash=(a.sc/100)*C;
   var tags='';
-  if(a.sb9)tags+='<span class="tag tg">SB 9 Eligible</span>';
+  if(a.sb9)tags+='<span class="tag tg">SB 9</span>';
   if(a.adu)tags+='<span class="tag tg">ADU</span>';
   if(a.jadu)tags+='<span class="tag tg">Jr ADU</span>';
+  if(a.mmhFourplex)tags+='<span class="tag tg">MMH 4-plex</span>';
+  else if(a.mmhTriplex)tags+='<span class="tag tg">MMH Triplex</span>';
+  else if(a.mmhDuplex)tags+='<span class="tag tg">MMH Duplex</span>';
   if(a.db)tags+='<span class="tag tb">Density Bonus</span>';
   if(a.mfr)tags+='<span class="tag tb">MF By-Right</span>';
-  if(a.mm)tags+='<span class="tag tw">Missing Middle</span>';
+  if(a.gpHDR)tags+='<span class="tag tb">GP2040: HDR</span>';
+  else if(a.gpMDR)tags+='<span class="tag tw">GP2040: MDR</span>';
+  else if(a.gpLDR)tags+='<span class="tag tm">GP2040: LDR</span>';
+  if(a.gpMU)tags+='<span class="tag tw">GP2040: Mixed Use</span>';
   if(!a.res)tags+='<span class="tag tm">Non-Residential</span>';
   if(!tags)tags='<span class="tag tm">Review Required</span>';
+
+  // MMH eligibility detail
+  var mmhDetail='';
+  if(a.sfr){
+    if(a.mmhFourplex)mmhDetail='Fourplex by right (lot ≥ 6,000 sqft). Triplex and duplex also permitted.';
+    else if(a.mmhTriplex)mmhDetail='Triplex by right (lot ≥ 4,500 sqft). Duplex also permitted.';
+    else if(a.mmhDuplex)mmhDetail='Duplex by right (lot ≥ 3,000 sqft).';
+    else mmhDetail='Lot under 3,000 sqft — MMH minimum not met.';
+  } else {
+    mmhDetail='MMH applies to R-1 zones only. This parcel is zoned '+p.zone+'.';
+  }
+
+  // GP 2040 context
+  var gpLabel=a.gpHDR?'High Density Residential (HDR)':a.gpMDR?'Medium Density Residential (MDR)':a.gpLDR?'Low Density Residential (LDR)':a.gpMU?'Mixed Use / Transit Corridor':'Non-Residential / Other';
+  var gpNote=a.gpHDR?'GP2040 supports 30–100+ du/ac. Strong upzoning potential.':
+    a.gpMDR?'GP2040 supports 15–30 du/ac. Good candidate for multifamily.':
+    a.gpLDR?'GP2040 base density 1–12 du/ac. MMH and SB9 expand options above base.':
+    a.gpMU?'Mixed use designation supports ground-floor retail with residential above.':
+    'Consult GP2040 land use map for specific designation.';
+
   var elig=
-    ei(a.sb9?'dg':'dm','SB 9 — '+(a.sb9?'Eligible':'Not Eligible'),a.sb9?'Lot split + duplex by right. Up to 4 units, no discretionary approval.':'Requires SFR zone, ≥2,400 sqft lot, ≤1 existing unit.')+
-    ei(a.adu?'dg':'dm','ADU — '+(a.adu?'Eligible':'Not Eligible'),a.adu?'Detached or attached ADU permitted.'+(a.jadu?' Junior ADU also allowed.':''):'Min 1,200 sqft lot required.')+
-    ei(a.db?'dg':'dm','Density Bonus — '+(a.db?'Applicable':'Review Required'),a.db?'Up to 50% density increase with affordable unit (CA Gov Code 65915).':'Base zone may not support density bonus.')+
-    ei(a.mfr?'dg':a.mm?'dw':'dm','Multifamily By-Right — '+(a.mfr?'Yes':'No'),a.mfr?'Multifamily permitted as of right.':a.mm?'Missing-middle types may be allowed — verify zoning code.':'Requires entitlement or rezoning.');
+    ei(a.sb9?'dg':'dm','SB 9 — '+(a.sb9?'Eligible':'Not Eligible'),
+      a.sb9?'Lot split + duplex by right. Up to 4 units total, no discretionary approval required (state law).':
+      'Requires SFR zone, ≥ 2,400 sqft lot, ≤ 1 existing unit.')+
+    ei(a.mmhDuplex?'dg':'dm','Missing Middle Housing Ord. (2024) — '+(a.mmhDuplex?'Eligible':'Not Eligible'),
+      mmhDetail)+
+    ei(a.adu?'dg':'dm','ADU / JADU — '+(a.adu?'Eligible':'Not Eligible'),
+      a.adu?'Accessory Dwelling Unit permitted.'+(a.jadu?' Junior ADU (≤500 sqft) also allowed — up to 2 bonus units total.':''):
+      'Min 1,200 sqft lot required.')+
+    ei(a.db?'dg':'dm','Density Bonus Law — '+(a.db?'Applicable':'Review Required'),
+      a.db?'CA Gov Code 65915: up to 50% density increase when ≥1 affordable unit provided. Applies on top of MMH and SB9.':
+      'Base zone may not support density bonus at this lot size.')+
+    ei(a.mfr?'dg':'dm','Multifamily By-Right — '+(a.mfr?'Yes':'No'),
+      a.mfr?'Zone permits multifamily as of right — no conditional use permit required.':
+      'Current zone requires entitlement or rezoning for multifamily.')+
+    ei('dw','GP 2040 — '+gpLabel, gpNote);
   var lot=p.lot>0?p.lot.toLocaleString()+' sqft':'—';
   var bld=a.bld>0?'~'+a.bld.toLocaleString()+' sqft':'—';
   var lv=p.lv>0?'$'+p.lv.toLocaleString():'—';
   var tv=(p.lv+p.iv)>0?'$'+(p.lv+p.iv).toLocaleString():'—';
   var la=p.la>0?p.la.toLocaleString()+' sqft':'—';
-  var civic=a.sb9?'This lot may qualify for an SB 9 lot split — up to 4 units where 1 exists today, no discretionary approval required.':
+  var civic=
+    a.mmhFourplex&&a.sb9?'Under Sacramento's Missing Middle Ordinance (2024), this lot may allow up to a fourplex by right — and SB 9 could further subdivide the lot. Strong by-right development potential.':
+    a.mmhFourplex?'Under Sacramento's Missing Middle Housing Ordinance (effective Jan 2024), this R-1 lot may accommodate up to a fourplex by right — no discretionary approval required.':
+    a.mmhTriplex?'This lot may qualify for a triplex under Sacramento's Missing Middle Housing Ordinance (2024). No conditional use permit required in R-1 zones.':
+    a.mmhDuplex&&a.sb9?'SB 9 and Sacramento's Missing Middle Ordinance (2024) both apply here — up to 4 units possible by right through different pathways.':
+    a.mmhDuplex?'Sacramento's Missing Middle Housing Ordinance (effective Jan 2024) allows a duplex by right on this R-1 lot without a conditional use permit.':
+    a.sb9?'This lot may qualify for an SB 9 lot split — up to 4 units where 1 exists today, no discretionary approval required.':
     a.adu?'This lot may be eligible for an ADU or Junior ADU — a path to rental income without full redevelopment.':
-    'Limited by-right options. An architect or planner can assess entitlement pathways.';
+    'Limited by-right options under current zoning. An architect or planner can assess entitlement and GP2040 consistency pathways.';
   var srcHtml=src==='demo'?'<div class="src-live">✓ DEMO DATA · Hardcoded real Sacramento parcel</div>':
     src==='live'?'<div class="src-live">✓ LIVE DATA · Sacramento County Assessor + GIS + Zoning</div>':
     '<div class="src-est">⚠ PARCEL API NOT REACHED · Check connection and try again</div>';
@@ -639,7 +735,8 @@ function render(p,a,src){
     '<div class="ssub">'+p.zone+' · APN: '+p.apn+'</div></div></div>'+
     sec('Opportunities','<div class="tags">'+tags+'</div>'+elig,'opp')+
     sec('Physical & Zoning',dr('Zoning',p.zone||'—',true)+dr('Lot Size',lot)+dr('Existing Units',p.units||'—')+dr('Year Built',p.yr||'—')+dr('Living Area',la),'phys')+
-    sec('Financial Signals',dr('Est. Max Units',a.max>1?'Up to '+a.max:'1 unit',true)+dr('Est. Buildable',bld)+dr('Assessed Land',lv)+dr('Total Assessed',tv),'fin')+
+    sec('Financial Signals',dr('Est. Max Units',a.max>1?'Up to '+a.max+' units':'1 unit',true)+dr('Est. Buildable',bld)+dr('Assessed Land',lv)+dr('Total Assessed',tv),'fin')+
+    sec('Policy Context',dr('GP 2040 Designation',gpLabel,true)+dr('MMH Eligible',a.mmhFourplex?'4-plex':a.mmhTriplex?'Triplex':a.mmhDuplex?'Duplex':'No')+dr('SB 9',a.sb9?'Yes':'No')+dr('Density Bonus',a.db?'Applicable':'Review req.'),'policy')+
     '<div class="civic"><div class="clbl">Homeowner Note</div><div class="ctxt">'+civic+'</div></div>'+
     srcHtml+'<div class="fnote">Screening only — verify with local jurisdiction before acting on this analysis.</div>'+dbgHtml;
 }
