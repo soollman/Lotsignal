@@ -410,31 +410,48 @@ function loadDemo(d){
 }
 
 // ── PARCEL APIs ───────────────────────────────────────────────────────────────
-var PA_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/PARCELS/MapServer/0/query';
-var AS_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/ASSESSOR/MapServer/0/query';
+// Layer 22 = ALL Parcels (confirmed fields: PARCEL_NUMBER, APN_DASH, LOTSIZE, ZONE_, LANDUSE, NAME, JURISDICTION)
+// Layer 0  = legacy/display only — skip
+// ASSESSOR layer 0 = scanned maps only, no queryable data — skip
+// ASSESSOR layer 1 = Sales by Property Type — queryable, has NET_VALUE, SALE_PRICE
+// Zoning layer 3 = confirmed fields: ZONE, BASE_ZONE, PUDNAME, SPDNAME, TYPE
+var PA_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/PARCELS/MapServer/22/query';
+var SA_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/ASSESSOR/MapServer/1/query';
 var ZO_URL='https://mapservices.gis.saccounty.net/arcgis/rest/services/CITY_of_SACRAMENTO/MapServer/3/query';
 
 function fetchParcel(lat,lng,addr){
   var qs='geometry='+lng+','+lat+'&geometryType=esriGeometryPoint&inSR=4326&outSR=4326&spatialRel=esriSpatialRelIntersects&outFields=*&returnGeometry=false&f=json';
   return Promise.all([
     proxyFetch(PA_URL+'?'+qs).catch(function(){return null;}),
-    proxyFetch(AS_URL+'?'+qs).catch(function(){return null;}),
+    proxyFetch(SA_URL+'?'+qs).catch(function(){return null;}),
     proxyFetch(ZO_URL+'?'+qs).catch(function(){return null;})
   ]).then(function(res){
     var P=res[0]&&res[0].features&&res[0].features[0]?res[0].features[0].attributes:{};
-    var A=res[1]&&res[1].features&&res[1].features[0]?res[1].features[0].attributes:{};
+    var S=res[1]&&res[1].features&&res[1].features[0]?res[1].features[0].attributes:{};
     var Z=res[2]&&res[2].features&&res[2].features[0]?res[2].features[0].attributes:{};
-    console.log('P:',P,'A:',A,'Z:',Z);
-    var apn=P.APN||P.APN_FORMATTED||A.APN||A.PARCELNO||'—';
-    var lot=fl(P.LOT_SIZE_SF||P.LOTSIZE_SF||P.LOT_AREA||A.LOT_SQ_FEET||A.LOTSIZE||A.LAND_AREA);
-    var zone=Z.ZONE||Z.BASE_ZONE||Z.ZONING||P.ZONING||P.ZONE||A.ZONING||A.ZONE||'—';
-    var lv=fl(A.LAND_VALUE||A.NET_LAND_VALUE||A.ASR_LAND);
-    var iv=fl(A.IMPROVEMENT_VALUE||A.NET_IMPROVEMENT_VALUE||A.ASR_IMPR);
-    var yr=parseInt(A.YEAR_BUILT||A.YR_BLT)||0;
-    var la=fl(A.LIVING_AREA||A.TOTAL_LIVING_AREA||A.BLDG_SQFT);
-    var units=parseInt(A.UNITS||A.NO_UNITS)||1;
+    console.log('PARCELS (layer 22):',P);
+    console.log('SALES/ASSESSOR (layer 1):',S);
+    console.log('ZONING (layer 3):',Z);
+
+    // ALL PARCELS layer 22 — confirmed field names
+    var apn  = P.APN_DASH || P.PARCEL_NUMBER || P.APN10 || '—';
+    var lot  = fl(P.LOTSIZE);                          // confirmed field name
+    var zone = Z.ZONE || Z.BASE_ZONE || P.ZONE_ || '—'; // Z.ZONE confirmed, P.ZONE_ confirmed fallback
+    var lv   = fl(S.NET_VALUE || S.LAND_VALUE || S.SALE_PRICE);
+    var iv   = fl(S.IMPROVEMENT_VALUE || S.IMP_VALUE);
+    var yr   = parseInt(S.YEAR_BUILT || S.YR_BLT) || 0;
+    var la   = fl(S.LIVING_AREA || S.BLDG_SQFT || S.SQ_FEET);
+    var units= parseInt(P.UNITS || S.UNITS || S.NO_UNITS) || 1;
+
+    // lot size fallback: LOTSIZE is in acres on some county datasets — convert if suspiciously small
+    if(lot>0 && lot<50) lot = Math.round(lot*43560); // acres → sqft
+
+    // SHAPE.STArea() is in state plane feet² — use as ultimate fallback for lot size
+    if(!lot && P['SHAPE.STArea()']>0) lot = Math.round(P['SHAPE.STArea()']);
+
+    var hasData = (apn!=='—' || lot>0 || zone!=='—');
     return{p:{address:addr,apn:apn,zone:zone,lot:lot,units:units,yr:yr,lv:lv,iv:iv,la:la},
-      src:(apn!=='—'||lot>0||zone!=='—')?'live':'no-data'};
+      src:hasData?'live':'no-data'};
   });
 }
 function fl(v){return parseFloat(v)||0;}
